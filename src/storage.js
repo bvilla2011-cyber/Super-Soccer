@@ -28,17 +28,29 @@ async function writeRecord(record) {
   let db;
   try { db=await openDB(); }catch(error){
     if(!globalThis.localStorage)throw new Error('El navegador no permite guardar. Exporta una copia de tu carrera.');
-    try { localStorage.setItem(`super-soccer-save-${record.id}`,JSON.stringify(record));return 'localStorage'; }
-    catch(e){throw new Error('No queda espacio de guardado. Exporta la carrera y libera una ranura.');}
+    return writeFallback(record);
   }
   try {
     await new Promise((resolve,reject)=>{
       const tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(record);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
     });return 'IndexedDB';
   } catch(error) {
-    try {if(!globalThis.localStorage)throw error;localStorage.setItem(`super-soccer-save-${record.id}`,JSON.stringify(record));return 'localStorage';}
-    catch(e){throw new Error('No se ha podido guardar. Exporta tu carrera y comprueba el espacio disponible.');}
+    return writeFallback(record);
   }
+}
+// Large careers can exceed localStorage's quota when a second full generation is kept.
+// Prefer the latest complete save to failing every subsequent save in fallback mode.
+function writeFallback(record) {
+  try {
+    const storage=globalThis.localStorage;if(!storage)throw new Error('unavailable');
+    const key=`super-soccer-save-${record.id}`;
+    try {storage.setItem(key,JSON.stringify(record));return 'localStorage';}
+    catch (error) {
+      if(!record.backup)throw error;
+      storage.setItem(key,JSON.stringify({...record,backup:null}));
+      return 'localStorage-single';
+    }
+  } catch(error) {throw new Error('No se ha podido guardar. Exporta tu carrera y comprueba el espacio disponible.');}
 }
 const assert=(condition,message)=>{if(!condition)throw new Error(`Partida incompatible o dañada: ${message}`);};
 const integer=(n,min,max)=>Number.isInteger(n)&&n>=min&&n<=max;
@@ -126,10 +138,11 @@ export function saveSlot(id,world,match=null) {
     try {if(record?.current){unpack(record.current);previous=record.current;}}catch(e){previous=record?.backup??null;}
     const team=savedWorld.teams.find(t=>t.id===savedWorld.userTeam);
     const metadata={manager:savedWorld.manager,club:team.name,teamId:team.id,colors:team.colors,code:team.code,season:savedWorld.season,event:savedWorld.eventIndex,total:savedWorld.events.length,mode:savedWorld.mode,date:envelope.date,match:!!match};
-    await writeRecord({id,current:envelope,backup:previous,metadata});return metadata;
+    const backend=await writeRecord({id,current:envelope,backup:previous,metadata});return {...metadata,backend};
   });saveQueue=task;return task;
 }
 export async function loadSlot(id,{backup=false}={}) {
+  await saveQueue.catch(()=>{});
   const record=await readRecord(id);if(!record)return null;
   if(backup) {if(!record.backup)throw new Error('Esta ranura todavía no tiene una copia anterior.');return {...unpack(record.backup),recovered:true};}
   try {return {...unpack(record.current),recovered:false};}

@@ -58,7 +58,7 @@ function checkpoint(){if(game&&!matchContext?.friendly){pendingMatch=game.state=
 async function save({notify=false,target=slot}={}) {
   if(!world)return;
   checkpoint();status('Guardando…');saveInFlight=true;
-  try{await saveSlot(target,world,pendingMatch);slot=target;status('✓ Guardado en este PC');await refreshSlots();if(notify)toast(`Carrera guardada en la ranura ${slot}.`);}
+  try{const result=await saveSlot(target,world,pendingMatch);slot=target;status('✓ Guardado en este PC');await refreshSlots();if(result.backend==='localStorage-single')toast('Guardado actualizado. No hay espacio para una copia anterior: exporta una copia.',true);else if(notify)toast(`Carrera guardada en la ranura ${slot}.`);}
   catch(error){status('⚠ No se ha guardado');toast(error.message,true);throw error;}
   finally{saveInFlight=false;}
 }
@@ -156,7 +156,7 @@ async function runMatchday(){
   try{
     await new Promise(r=>setTimeout(r,900));document.getElementById('matchday-title').textContent='El balón ya está en juego…';await new Promise(r=>setTimeout(r,900));document.getElementById('matchday-title').textContent='Llegan los resultados de la jornada…';await new Promise(r=>setTimeout(r,800));
     const eventId=world.events[world.eventIndex].id;advance(world);await save();closeModal(true);view='home';render();const games=world.fixtures.filter(f=>f.eventId===eventId&&!f.bye);modal('RESULTADOS DE LA JORNADA',`<h2>El fútbol no se detiene.</h2><p class="muted">Tu equipo descansó en esta jornada. Los demás estadios ya tienen resultado.</p><div class="matchday-results">${games.slice(0,24).map(f=>UI.fixtureRow(world,f)).join('')}</div>${games.length>24?`<p class="hint">${games.length} partidos completados. Puedes consultar todos en el calendario.</p>`:''}<div class="modal-actions">${UI.button('Volver al banquillo →','close-modal','btn primary')}</div>`,{wide:true});
-  }finally{busy=false;}
+  }finally{if(modalStack.at(-1)?.title==='LOS DEMÁS ESTADIOS')closeModal(true);busy=false;}
 }
 
 function chooseLineup(id){
@@ -179,7 +179,7 @@ function offer(id,type='transfer',suggested=null){
 function inbox(){
   const offers=world.offers??[];for(const o of offers)o.unread=false;
   closeModal(true);render();
-  modal('BANDEJA DE FICHAJES',offers.length?offers.map(o=>`<article class="mail-card"><div><b>${e(o.name)} · ${o.type==='loan'?'CESIÓN':'TRASPASO'}</b><p>${({pending:'Esperando respuesta',accepted:'¡Oferta aceptada! Firma para cerrar la operación.',rejected:'Oferta rechazada. Puedes volver a negociar.',signed:'Operación completada',unavailable:'Jugador ya no disponible'})[o.status]} · ${money(o.fee)}</p></div><div>${o.status==='accepted'?UI.button('FIRMAR',`sign-offer-${o.id}`,'btn primary compact'):o.status==='rejected'?UI.button(`CONTRAOFERTAR · ${money(o.counter)}`,`counter-${o.id}`,'btn secondary compact'):''}</div></article>`).join(''):'<p>No tienes mensajes de fichajes.</p>',{wide:true});
+  modal('BANDEJA DE FICHAJES',offers.length?offers.map(o=>`<article class="mail-card"><div><b>${e(o.name)} · ${o.type==='loan'?'CESIÓN':'TRASPASO'}</b><p>${({pending:'Esperando respuesta',accepted:'¡Oferta aceptada! Firma para cerrar la operación.',rejected:'Oferta rechazada. Puedes volver a negociar.',signed:'Operación completada',replaced:'Sustituida por una nueva oferta',unavailable:'El club o jugador ya no está disponible'})[o.status]} · ${money(o.fee)}</p></div><div>${o.status==='accepted'?UI.button('FIRMAR',`sign-offer-${o.id}`,'btn primary compact'):o.status==='rejected'?UI.button(`CONTRAOFERTAR · ${money(o.counter)}`,`counter-${o.id}`,'btn secondary compact'):''}</div></article>`).join(''):'<p>No tienes mensajes de fichajes.</p>',{wide:true});
   scheduleSave();
 }
 async function simulateWeek(){
@@ -194,9 +194,9 @@ async function simulateWeek(){
     }
     await save();closeModal(true);render();
     toast((world.offers??[]).some(o=>o.unread)?'Tienes una respuesta en el buzón.':'¡Día de partido!');
-  }finally{busy=false;}
+  }finally{if(modalStack.at(-1)?.title==='AVANZANDO LA SEMANA')closeModal(true);busy=false;}
 }
-function helpContent(){return `<h2>El fútbol se dirige desde el banquillo.</h2><div class="guide-list"><article><b>01</b><div><h3>Construye tu equipo</h3><p>Un portero y cuatro jugadores de campo disputan las retransmisiones. Alinea jugadores desde Plantilla y elige formación y táctica. Los atributos, la forma física y la moral influyen en el resultado.</p></div></article><article><b>02</b><div><h3>Sigue la simulación animada</h3><p>Los jugadores se mueven automáticamente. No hay control directo, tiros manuales ni resultados instantáneos. Ajusta la velocidad de la retransmisión, pausa cuando quieras y prepara cambios en el descanso.</p></div></article><article><b>03</b><div><h3>Piensa en varias temporadas</h3><p>Ficha, vende y renueva contratos. El potencial es un techo, no una promesa de crecimiento. Los jóvenes necesitan tiempo, minutos e instalaciones; los veteranos pierden atributos y se retiran. Los contratos expirados liberan al jugador al cerrar la temporada.</p></div></article><article><b>04</b><div><h3>Compite en Europa</h3><p>Siete países con dos divisiones, copas y supercopas. Las tres copas europeas tienen grupos y eliminatorias. Los dos últimos de Primera descienden y los dos primeros de Ascenso suben. La clasificación de la temporada decide las plazas europeas siguientes.</p></div></article><article><b>05</b><div><h3>Cuida tu carrera</h3><p>El juego guarda durante el partido y al terminar las jornadas. Hay tres ranuras con una copia anterior y archivos exportables. Instálalo desde tu navegador o usa el lanzador del repositorio para jugar sin conexión.</p></div></article></div><p class="hint">Super Soccer tiene diseño, código, arte y audio propios. Su universo de equipos y jugadores es ficticio; no representa una base de datos oficial ni reproduce todas las funciones de otro juego.</p>`;}
+function helpContent(){return `<h2>El fútbol se dirige desde el banquillo.</h2><div class="guide-list"><article><b>01</b><div><h3>Construye tu equipo</h3><p>Un portero y cuatro jugadores de campo disputan las retransmisiones. Alinea jugadores desde Plantilla y elige formación y táctica. Los atributos, la forma física y la moral influyen en el resultado.</p></div></article><article><b>02</b><div><h3>Sigue la simulación animada</h3><p>Los jugadores se mueven automáticamente. No hay control directo, tiros manuales ni resultados instantáneos. Ajusta la velocidad de la retransmisión, pausa cuando quieras y prepara cambios en el descanso.</p></div></article><article><b>03</b><div><h3>Piensa en varias temporadas</h3><p>Ficha, vende y renueva contratos. El potencial es un techo, no una promesa de crecimiento. Los jóvenes necesitan tiempo, minutos e instalaciones; los veteranos pierden atributos y se retiran. Los contratos expirados liberan al jugador al cerrar la temporada.</p></div></article><article><b>04</b><div><h3>Compite en Europa</h3><p>Siete países con tres divisiones, copas y supercopas. Las tres copas europeas tienen grupos y eliminatorias. Los dos últimos de cada división descienden y los dos primeros de la división inferior ascienden. La clasificación de la temporada decide las plazas europeas siguientes.</p></div></article><article><b>05</b><div><h3>Cuida tu carrera</h3><p>El juego guarda durante el partido y al terminar las jornadas. Hay tres ranuras con una copia anterior y archivos exportables. Instálalo desde tu navegador o usa el lanzador del repositorio para jugar sin conexión.</p></div></article></div><p class="hint">Super Soccer tiene diseño, código, arte y audio propios. Su universo de equipos y jugadores es ficticio; no representa una base de datos oficial ni reproduce todas las funciones de otro juego.</p>`;}
 function showOffers(){
   const eligible=world.teams.filter(t=>t.id!==world.userTeam).sort((a,b)=>teamRating(b)-teamRating(a));
   modal('TU SIGUIENTE DESTINO',`<h2>El banquillo puede cambiar. La historia sigue.</h2><p class="muted">Reputación ${world.reputation}/100. Los clubes exigen una reputación proporcional a su nivel. Cambiar de club conserva tu historial.</p><div class="club-offers">${eligible.map(t=>UI.button(`${badgeSVG(t,32)}<span>${e(t.name)}<small>${COUNTRIES.find(c=>c.id===t.country).name} · Media ${teamRating(t)}</small></span>${teamRating(t)>65+world.reputation*.3?'<small>No disponible</small>':'<b>Firmar →</b>'}`,`change-club-${t.id}`,'club-offer',teamRating(t)>65+world.reputation*.3?'disabled':'')).join('')}</div>`,{wide:true});
@@ -204,7 +204,7 @@ function showOffers(){
 
 async function action(a){
   audio.unlock();audio.play('click');
-  if(pendingMatch&&!game&&/^(buy-|sell-|renew-|upgrade-|invest-|youth$|lineup-|swap-)/.test(a))throw new Error('Hay una simulación en curso. Termínala antes de modificar la plantilla o el club.');
+  if(pendingMatch&&!game&&/^(buy-|sell-|renew-|upgrade-|invest-|youth$|lineup-|swap-|sign-offer-)/.test(a))throw new Error('Hay una simulación en curso. Termínala antes de modificar la plantilla o el club.');
   if(a==='close-modal'){closeModal();return;}
   if(a.startsWith('nav-')){navigate(a.slice(4));return;}
   if(a==='help'||a==='match-help'){if(game&&game.state!=='HalfTime')game.paused=true;modal('GUÍA DE SUPER SOCCER',helpContent(),{wide:true});return;}

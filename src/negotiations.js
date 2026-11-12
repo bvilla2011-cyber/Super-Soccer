@@ -9,6 +9,7 @@ export function submitOffer(world,playerId,fee,type='transfer') {
   if(!transferOpen(world))throw new Error('El mercado está cerrado.');
   const own=teamById(world,world.userTeam),{source,player}=locate(world,playerId);
   if(!player||player.loan)throw new Error('El jugador ya no está disponible.');
+  if(!['transfer','loan'].includes(type))throw new Error('Tipo de oferta no válido.');
   if(type==='loan'&&!source)throw new Error('No se puede ceder a un jugador libre.');
   if(!Number.isSafeInteger(fee)||fee<0||fee>own.budget)throw new Error('Introduce una oferta válida dentro de tu presupuesto.');
   if(own.roster.length>=20)throw new Error('Tu plantilla está completa.');
@@ -16,6 +17,8 @@ export function submitOffer(world,playerId,fee,type='transfer') {
   if(offers.some(o=>o.playerId===playerId&&['pending','accepted'].includes(o.status)))throw new Error('Ya tienes una negociación abierta por este jugador.');
   const asking=transferPrice(player,source,own);
   const o={id:`offer-${world.season}-${world.day??0}-${offers.length}`,playerId,name:player.name,sourceId:source?.id??null,type,fee,asking:type==='loan'?Math.max(10000,Math.round(asking*.12/10000)*10000):asking,status:'pending',due:(world.day??0)+2,unread:false};
+  // A new proposal replaces the previous rejected one for this player.
+  for(const previous of offers)if(previous.playerId===playerId&&previous.status==='rejected')previous.status='replaced';
   offers.unshift(o);return o;
 }
 export function advanceDay(world) {
@@ -25,6 +28,7 @@ export function advanceDay(world) {
   for(const o of world.offers??[])if(o.status==='pending'&&o.due<=world.day) {
     const {source,player}=locate(world,o.playerId);
     if(!player||(o.sourceId??null)!==(source?.id??null)||player.loan){o.status='unavailable';}
+    else if(source&&(source.roster.length<=8||(player.position==='POR'&&source.roster.filter(p=>p.position==='POR').length<=1))){o.status='unavailable';}
     else if(o.fee>=o.asking*.9)o.status='accepted';
     else {o.status='rejected';o.counter=Math.max(o.fee+10000,Math.round(o.asking*.94/10000)*10000);}
     o.unread=true;

@@ -19,3 +19,8 @@ test('rejected offers can be increased and loans return at the end of the season
  const accepted=submitOffer(w,p.id,rejected.counter,'loan');advanceDay(w);advanceDay(w);assert.equal(accepted.status,'accepted');signOffer(w,accepted.id);assert.ok(own.roster.some(q=>q.id===p.id));
  while(!w.seasonComplete)advance(w);nextSeason(w);assert.ok(source.roster.some(q=>q.id===p.id));assert.ok(!own.roster.some(q=>q.id===p.id));
 });
+
+test('a counteroffer replaces the rejected proposal and waits again',()=>{
+ const w=createCareer({seed:17});const own=teamById(w,w.userTeam),source=teamById(w,'en-1'),p=source.roster[5];own.budget=1e9;
+ const first=submitOffer(w,p.id,0);advanceDay(w);advanceDay(w);assert.equal(first.status,'rejected');const second=submitOffer(w,p.id,first.counter);assert.equal(first.status,'replaced');assert.equal(second.status,'pending');assert.equal(source.roster.includes(p),true);advanceDay(w);advanceDay(w);assert.equal(second.status,'accepted');
+});

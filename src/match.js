@@ -124,7 +124,7 @@ export class MatchSimulation {
     const helpers=this.players.filter(p=>p.side===event.side&&p.id!==scorer?.id&&!p.keeper&&!p.red);
     const wing=helpers[0]??scorer,mid=helpers[1]??wing;
     const y=clamp(330+(this.visualRng()-.5)*200,245,415);
-    this.activeAction={event,dir,goalX,scorer:scorer?.id,wing:wing?.id,mid:mid?.id,shootY:y,shotY:event.type==='goal'?285+this.visualRng()*90:event.type==='wide'?(this.visualRng()<.5?190:470):event.type==='post'?247:330+(this.visualRng()-.5)*60,marked:false,startBall:{x:this.ball.x,y:this.ball.y}};
+    this.activeAction={event,dir,goalX,style:Math.floor(this.visualRng()*3),scorer:scorer?.id,wing:wing?.id,mid:mid?.id,shootY:y,shotY:event.type==='goal'?285+this.visualRng()*90:event.type==='wide'?(this.visualRng()<.5?190:470):event.type==='post'?247:330+(this.visualRng()-.5)*60,marked:false,startBall:{x:this.ball.x,y:this.ball.y}};
     if(SHOTS.has(event.type))this.setBanner(event.side===this.userSide?'SE ACERCA TU EQUIPO':'PELIGRO RIVAL',`${event.minute}' · ${this.teams[event.side].name}`,1.5);
   }
   updateAction(dt) {
@@ -141,7 +141,7 @@ export class MatchSimulation {
         else if(p.id===wing?.id){x=ownGoal-a.dir*110;y=190;}
         else if(p.id===mid?.id){x=ownGoal-a.dir*200;y=425;}
         else if(p.side!==e.side&&!p.keeper){x=a.goalX-a.dir*(80+p.index*33);y=225+p.index*50;}
-        if(p.keeper&&p.side!==e.side){x=a.goalX-a.dir*20;y=t>3.8?lerp(330,a.shotY,clamp((t-3.8)*2.4,0,1)):clamp(330+(a.shootY-330)*.22,270,390);}
+        if(p.keeper&&p.side!==e.side){x=a.goalX-a.dir*20;y=t>3.8?lerp(330,a.shotY,clamp((t-3.8)*2.4,0,1)):clamp(330+(a.shootY-330)*.22,270,390);if(t>4.05&&t<4.8)p.fall=.22;}
       }else {x=scorer.x+(p.side===e.side?-a.dir*35:a.dir*35);y=clamp(scorer.y+(p.index-2)*43,60,600);}
       if(p.celebrate>0){x+=Math.cos(p.index)*30;y+=Math.sin(p.index)*30;}
       this.movePlayer(p,clamp(x,14,1036),clamp(y,30,630),dt,130);
@@ -153,7 +153,7 @@ export class MatchSimulation {
       else if(t<2.8)ballPos=lerpPoint(wing,scorer,ease(t-1.8));
       else if(t<3.8)ballPos={x:scorer.x+a.dir*15,y:scorer.y};
       else if(t<4.45) {
-        const f=ease((t-3.8)/.65);ballPos=lerpPoint(scorer,{x:a.goalX+a.dir*(e.type==='goal'?27:0),y:a.shotY},f);this.ball.z=Math.sin(f*Math.PI)*15;scorer.kick=1;
+        const f=ease((t-3.8)/.65);ballPos=lerpPoint(scorer,{x:a.goalX+a.dir*(e.type==='goal'?27:0),y:a.shotY},f);const style=a.style??0;ballPos.y+=style===1?Math.sin(f*Math.PI)*a.dir*32:style===2?-Math.sin(f*Math.PI)*a.dir*23:0;this.ball.z=Math.sin(f*Math.PI)*(style===2?46:style===1?25:12);scorer.kick=1;
       } else {
         const endX=e.type==='post'?a.goalX-a.dir*(t-4.45)*180:e.type==='save'?a.goalX-a.dir*25:a.goalX+a.dir*27;
         ballPos={x:endX,y:a.shotY};this.ball.z=e.type==='goal'?Math.max(0,7-Math.abs(t-4.45)*10):0;

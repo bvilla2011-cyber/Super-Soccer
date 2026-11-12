@@ -34,3 +34,11 @@ test('save slots are independent and preserve a recoverable previous generation'
 test('a mid-season transfer preserves season and career statistics',()=>{
  const w=createCareer({seed:42});advance(w);const source=teamById(w,'en-1'),p=source.roster[4];const season=structuredClone(p.stats),career=structuredClone(p.career);buyPlayer(w,p.id);assert.deepEqual(p.stats,season);assert.deepEqual(p.career,career);
 });
+
+test('fallback storage keeps the newest career when the previous generation exceeds quota',async()=>{
+ const memory=new Map();globalThis.localStorage={getItem:k=>memory.get(k)??null,removeItem:k=>memory.delete(k),setItem:(k,v)=>{if(JSON.parse(v).backup)throw new Error('quota');memory.set(k,v);}};
+ const w=createCareer({seed:91,manager:'Antes'});await saveSlot(1,w);w.manager='Después';const meta=await saveSlot(1,w);assert.equal(meta.backend,'localStorage-single');assert.equal((await loadSlot(1)).world.manager,'Después');assert.equal((await listSlots())[0].hasBackup,false);
+});
+test('a player whose contract expires ages once at the turn of the season',()=>{
+ const w=createCareer({seed:12,mode:'league'}),own=teamById(w,w.userTeam),p=own.roster.find(p=>p.age<30),old=p.age;p.contract=1;w.seasonComplete=true;nextSeason(w);assert.equal(p.age,old+1);assert.ok(w.freeAgents.includes(p));
+});
