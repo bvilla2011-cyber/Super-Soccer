@@ -28,11 +28,11 @@ test('watch speed and frame rate do not change statistical results',()=>{
 });
 test('halftime lineup changes are used to calculate the second period',()=>{
  const {home,away,f}=setup();const g=new MatchSimulation({home,away,fixtureId:f.id,seed:27,duration:120});while(g.state!=='HalfTime')g.update(.05);
- const replacement=clone(home);replacement.lineup=replacement.roster.slice(5,10).map(p=>p.id);g.teams[0]=replacement;g.continueSecondHalf();const selected=Object.keys(g.secondHalf.players);assert.ok(selected.includes(replacement.roster[5].id));assert.ok(!selected.includes(home.roster[0].id));
+ const replacement=clone(home);replacement.lineup=[...replacement.lineup];replacement.lineup[0]=replacement.roster[11].id;g.teams[0]=replacement;g.continueSecondHalf();const selected=Object.keys(g.secondHalf.players);assert.equal(selected.length,22);assert.ok(selected.includes(replacement.roster[11].id));assert.ok(!selected.includes(home.roster[0].id));
 });
 test('overall is independent of JSON attribute key ordering',()=>{const {home}=setup();const p=home.roster[0],copy=clone(p);copy.attributes=Object.fromEntries(Object.entries(copy.attributes).reverse());assert.equal(overall(p),overall(copy));});
 test('a red card keeps the team short-handed after halftime',()=>{
  const {home,away,f}=setup(),g=new MatchSimulation({home,away,fixtureId:f.id,seed:1,duration:120});
  const sentOff=g.players.find(p=>p.side===0&&!p.keeper);g.firstHalf.players[sentOff.id].red=1;g.state='HalfTime';g.continueSecondHalf();
- assert.equal(g.players.filter(p=>p.side===0).length,4);assert.equal(g.players.filter(p=>p.side===1).length,5);assert.ok(!g.secondHalf.players[sentOff.id]);
+ assert.equal(g.players.filter(p=>p.side===0).length,10);assert.equal(g.players.filter(p=>p.side===1).length,11);assert.ok(!g.secondHalf.players[sentOff.id]);
 });

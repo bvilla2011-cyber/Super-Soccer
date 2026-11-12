@@ -11,7 +11,7 @@ test('transfer funds balance, ownership moves and repeated purchases fail',()=>{
 test('market enforces budget, window, squad limit and goalkeeper retention',()=>{
  const w=createCareer({seed:9}),own=teamById(w,w.userTeam);own.budget=0;assert.throws(()=>buyPlayer(w,'en-1-p4'),/Presupuesto/);own.budget=1e9;
  w.eventIndex=w.events.findIndex(e=>e.id==='league-8');assert.throws(()=>buyPlayer(w,'en-1-p4'),/cerrado/);
- w.eventIndex=0;own.roster=own.roster.slice(0,8).filter(p=>p.position!=='POR'||p.id===own.roster[0].id);assert.throws(()=>sellPlayer(w,own.roster[0].id),/ocho|portero/);
+ w.eventIndex=0;own.roster=own.roster.slice(0,8).filter(p=>p.position!=='POR'||p.id===own.roster[0].id);assert.throws(()=>sellPlayer(w,own.roster[0].id),/once|portero/);
 });
 test('renewal and facility upgrade charge exactly once; youth is once per season',()=>{
  const w=createCareer({seed:42}),t=teamById(w,w.userTeam),p=t.roster.find(p=>p.contract<5),cost=wage(p)*12,before=t.budget,contract=p.contract;renewPlayer(w,p.id);assert.equal(p.contract,Math.min(5,contract+2));assert.equal(t.budget,before-cost);
