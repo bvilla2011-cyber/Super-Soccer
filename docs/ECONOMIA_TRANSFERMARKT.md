@@ -1,6 +1,6 @@
 # Economía del mercado · Super Soccer
 
-Actualizado el 12 de noviembre de 2026. Las referencias son las medias por jugador que Transfermarkt publica para la temporada 2026/27. El universo del juego usa plantillas de 16 jugadores (once titulares y cinco suplentes), así que las cifras son una calibración del juego, no una copia literal de plantillas reales.
+Actualizado el 12 de noviembre de 2026. Las referencias son las medias por jugador que Transfermarkt publica para la temporada 2026/27. El universo del juego usa plantillas de 25 jugadores (once titulares y catorce reservas), así que las cifras son una calibración del juego, no una copia literal de plantillas reales.
 
 | País | Primera | Segunda | Tercera | Competiciones de referencia |
 |---|---:|---:|---:|---|
@@ -33,3 +33,19 @@ Los ingresos de televisión, entradas y premios también bajan en las divisiones
 Transfermarkt aclara que sus valores son estimaciones de mercado, no importes de traspaso pagados ni tarifas oficiales; también indica que no usa un algoritmo único para asignarlos. Esta implementación usa esas valoraciones como referencia de escala para una economía ficticia de arcade.
 
 Fuente metodológica: [definición de valor de mercado de Transfermarkt](https://www.transfermarkt.com/navigation/mwdefinition).
+
+## Calibración de las ligas
+
+El simulador pondera la diferencia de nivel con el promedio de puntos por partido de los campeones recientes. Los archivos históricos disponibles cubren periodos distintos; estas cifras son metas de calibración, no resultados garantizados ni una predicción de campeón.
+
+| País | Puntos por partido del campeón | Muestra publicada | Referencia de formato actual |
+|---|---:|---|---:|
+| Inglaterra | 2,35 | 2010/11–2025/26 (16 temporadas) | 38 partidos |
+| España | 2,39 | 2012/13–2025/26 (14 temporadas) | 38 partidos |
+| Alemania | 2,42 | 2010/11–2025/26 (16 temporadas) | 34 partidos |
+| Italia | 2,37 | 2013/14–2025/26 (13 temporadas) | 38 partidos |
+| Francia | 2,32 | 2014/15–2025/26 (10 temporadas) | 34 partidos |
+| Portugal | 2,56 | 2018/19–2025/26 (7 temporadas) | 34 partidos |
+| Países Bajos | 2,46 | 2018/19–2025/26 (6 temporadas) | 34 partidos |
+
+Referencias: [resumen comparado de siete campeonatos](https://futexplorer.com/analisis/campeones-de-siete-ligas-europeas), [archivo de puntos de LaLiga](https://www.planetfootball.com/la-liga/how-many-points-will-it-take-to-win-la-liga-in-2024-25), [promedio histórico de Premier League](https://www.premierleague.com/en/news/4373364/).

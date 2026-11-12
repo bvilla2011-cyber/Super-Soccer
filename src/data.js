@@ -45,6 +45,15 @@ export const DIFFICULTIES = {
 const first = ['Álex','Dani','Leo','Marco','Adri','Nico','Bruno','Hugo','Luca','Thiago','Oliver','Lucas','Noah','Enzo','Sami','Mateo','Tom','Amir','Iker','Joel','Alan','Max','Rui','Milan','Jules','Rayan','Karim','Iván','Jan','Finn','Otto','Elias','Yuri','Óscar','Adam','Sergi','Gael','Luis','Diego','Pablo'];
 const last = ['Silva','Ferrán','Costa','Navarro','Moretti','Bauer','Rossi','Martin','Soler','Dubois','Meijer','Santos','Vidal','Torres','Klein','Romano','Walker','Lefèvre','Duarte','Salas','Vega','Neri','Dias','Meyer','Vermeer','Blanco','Brooks','Mendes','Roca','García','Nolan','Lopes','Rivas','King','Almeida','Peeters','Serrano','Laurent','Fontana','Castro'];
 export const ATTRIBUTE_NAMES = { pace:'Ritmo',shot:'Disparo',pass:'Pase',defense:'Defensa',control:'Control',stamina:'Resistencia',keeping:'Portería' };
+const ICONIC_LOOKS={
+  'K. Mbapé':{skin:2,hair:3,hairstyle:1},'V. Junius':{skin:3,hair:0,hairstyle:0},'J. Belingam':{skin:1,hair:1,hairstyle:2},
+  'L. Yamir':{skin:1,hair:0,hairstyle:3},'P. Pedrián':{skin:0,hair:0,hairstyle:1},'R. Levandos':{skin:0,hair:1,hairstyle:4},
+  'E. Haland':{skin:0,hair:2,hairstyle:4},'P. Fodené':{skin:0,hair:2,hairstyle:1},'M. Salá':{skin:2,hair:0,hairstyle:3},
+  'F. Virtz':{skin:0,hair:1,hairstyle:1},'B. Sakán':{skin:2,hair:0,hairstyle:0},'M. Odegard':{skin:0,hair:1,hairstyle:4},
+  'H. Kain':{skin:0,hair:1,hairstyle:1},'J. Musial':{skin:0,hair:0,hairstyle:2},'A. Grimado':{skin:2,hair:0,hairstyle:3},
+  'L. Martino':{skin:0,hair:1,hairstyle:1},'N. Barel':{skin:0,hair:1,hairstyle:1},'L. Yamir':{skin:1,hair:0,hairstyle:3},
+  'J. Álvarez':{skin:1,hair:1,hairstyle:1},'A. Grizán':{skin:0,hair:1,hairstyle:4},'P. Gonçal':{skin:1,hair:0,hairstyle:1}
+};
 export function overall(player) {
   const a = player.attributes;
   const weights = {POR:[.08,.01,.09,.1,.06,.06,.6],DEF:[.16,.06,.16,.36,.1,.14,.02],MED:[.13,.14,.29,.12,.2,.11,.01],DEL:[.22,.34,.13,.04,.19,.07,.01]}[player.position];
@@ -62,8 +71,10 @@ export const MARKET_REFERENCE_AVERAGES_V2 = {
   fr:[8_830_000,1_100_000,145_000], pt:[3_980_000,434_000,37_000],
   nl:[2_860_000,299_000,4_000]
 };
+// Recent completed champions, normalized as points per match. Samples differ by available archive.
+export const TITLE_POINTS_PER_GAME={en:2.35,es:2.39,de:2.42,it:2.37,fr:2.32,pt:2.56,nl:2.46};
 const REFERENCE_MODEL_AVERAGES={1:15_000_000,2:1_250_000,3:380_000};
-export const ECONOMY_VERSION=4;
+export const ECONOMY_VERSION=5;
 export function playerValue(p,team=null,marketAverages=MARKET_REFERENCE_AVERAGES) {
   const value=overall(p),ageFactor=p.age<23?1.45:p.age>30?.62:1;
   const potentialFactor=1+Math.max(0,p.potential-value)/22;
@@ -92,8 +103,8 @@ export function upgradeTeamRoster(team) {
   const oldLength=team.roster?.length??0;
   team.roster??=[];team.lineup??=[];
   if(!team.kits){team.kits=teamKits(team.id,team.colors);changed=true;}
-  if(oldLength<16) {
-    const targets={POR:2,DEF:5,MED:5,DEL:4};
+  if(oldLength<25) {
+    const targets={POR:3,DEF:8,MED:8,DEL:6};
     const rng=random(parseInt(hash(`eleven-${team.id}`),16)>>>0),base=Math.max(48,teamRating(team)-7);
     for(const role of POSITIONS) {
       let count=team.roster.filter(p=>p.position===role).length;
@@ -144,7 +155,8 @@ export function makePlayer(rng, id, rating, position, star = null) {
   if (position === 'POR') { attrs.shot = rng.int(22,44); attrs.keeping = rating + rng.int(-2,4); }
   if (position === 'DEL') attrs.defense = clamp(rating-26,25,70);
   if (position === 'DEF') attrs.shot = clamp(rating-20,25,75);
-  const p = {id,name:star?.[0] ?? `${rng.pick(first)} ${rng.pick(last)}`,position,age,attributes:attrs,potential:0,fitness:100,morale:75,form:7,injury:0,ban:0,yellows:0,contract:rng.int(2,5),number:0,training:0,stats:emptyStats(),career:emptyStats(),skin:rng.int(0,4),hair:rng.int(0,5)};
+  const name=star?.[0] ?? `${rng.pick(first)} ${rng.pick(last)}`,look=ICONIC_LOOKS[name];
+  const p = {id,name,position,age,attributes:attrs,potential:0,fitness:100,morale:75,form:7,injury:0,ban:0,yellows:0,contract:rng.int(2,5),number:0,training:0,stats:emptyStats(),career:emptyStats(),skin:look?.skin??rng.int(0,4),hair:look?.hair??rng.int(0,5),hairstyle:look?.hairstyle??rng.int(0,5),iconic:!!look};
   p.potential = Math.max(overall(p),star?.[3] ?? clamp(overall(p)+(age<24 ? rng.int(4,19) : rng.int(0,4)),35,97));
   return p;
 }
@@ -158,7 +170,7 @@ export function createTeams(seedNumber) {
     all.forEach((t,i)=>{
       const id = `${c.id}-${i+1}`;
       const team = {id,name:t.name,short:t.name.split(' ').slice(0,2).join(' '),code:t.name.replace(/[^a-zA-Z]/g,'').slice(0,3).toUpperCase(),country:c.id,division:i<c.clubs.length?1:i<c.clubs.length+reserveNames.length?2:3,colors:t.colors,kits:teamKits(id,t.colors),stadium:`Estadio ${t.name.split(' ')[0]}`,capacity:12000+(t.rating-60)*1800,budget:0,formation:'4-4-2',tactic:'balanced',academy:1,trainingLevel:1,roster:[],lineup:[],honours:[],form:[]};
-      const roles = ['POR','DEF','DEF','DEF','DEF','MED','MED','MED','MED','DEL','DEL','POR','DEF','MED','DEL','DEF'];
+  const roles = ['POR','DEF','DEF','DEF','DEF','MED','MED','MED','MED','DEL','DEL','POR','DEF','MED','DEL','DEF','POR','DEF','DEF','MED','MED','MED','DEL','DEL','DEL'];
       roles.forEach((position,j)=>{
         const star = t.stars.find(s=>s[1]===position && !team.roster.some(p=>p.name===s[0]));
         const p = makePlayer(rng,`${id}-p${j}`,star?.[2] ?? t.rating-rng.int(0,j<5?6:12),position,star);

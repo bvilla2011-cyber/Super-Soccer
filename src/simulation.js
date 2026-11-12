@@ -1,4 +1,4 @@
-import { activePlayers, overall, FORMATIONS, DIFFICULTIES } from './data.js';
+import { activePlayers, overall, FORMATIONS, DIFFICULTIES, TITLE_POINTS_PER_GAME } from './data.js';
 import { clamp, poisson, weighted } from './utils.js';
 
 export function strength(team) {
@@ -39,9 +39,10 @@ export const resolvePenalties=(home,away,rng)=>penaltySeries(home,away,rng).scor
 export function simulateMatch(home,away,rng,{knockout=false,difficulty='club',userTeam=null,minutes=90,startMinute=0}={}) {
   const powers=[strength(home),strength(away)];
   const bonus=DIFFICULTIES[difficulty]?.bonus??0;
-  const expected=powers.map((p,i)=>clamp(1.35+(p.attack-powers[1-i].defense)/27+(i===0?.18:0)+((i===0?home:away).id===userTeam?bonus/25:0),.16,4.5));
+  const leagueTarget=TITLE_POINTS_PER_GAME[home.country]??2.35,leagueScale=clamp(leagueTarget/2.35,.94,1.1);
+  const expected=powers.map((p,i)=>clamp(1.18+(p.attack-powers[1-i].defense)*leagueScale/22+(i===0?.2:0)+((i===0?home:away).id===userTeam?bonus/28:0),.12,4.1));
   const score=expected.map(e=>poisson(e*minutes/90,rng)); const players={},events=[];
-  const shots=score.map((g,i)=>g+Math.max(1,Math.round((rng.int(3,9)+Math.floor(expected[i]))*minutes/90)));
+  const shots=score.map((g,i)=>g+Math.max(1,Math.round((rng.int(2,6)+Math.floor(expected[i]*1.1))*minutes/90)));
   const possession=clamp(Math.round(50+(powers[0].pass-powers[1].pass)*.5+rng.int(-7,7)),25,75);
   [home,away].forEach((team,side)=>{
     const active=activePlayers(team);
@@ -69,6 +70,13 @@ export function simulateMatch(home,away,rng,{knockout=false,difficulty='club',us
       events.push({minute:startMinute+rng.int(1,minutes),type:rng.pick(['save','save','wide','post']),side,player:shooter.id,name:shooter.name});
     }
   });
+  // A small number of set-piece incidents enrich the broadcast without turning every attack into a foul cutscene.
+  const fieldPlayers=[home,away].map(activePlayers).map(team=>team.filter(p=>p.position!=='POR'));
+  const foulCount=rng.int(3,7);
+  for(let i=0;i<foulCount;i++) {
+    const side=rng.int(0,1),victim=weighted(fieldPlayers[side],p=>p.position==='DEL'?1.15:1,rng);
+    if(victim)events.push({minute:startMinute+rng.int(4,minutes),type:'foul',side,player:victim.id,name:victim.name,severity:rng()<.14?'heavy':'normal'});
+  }
   for(const ev of events)if(ev.type==='red'||ev.type==='injury'){
     const last=Math.max(startMinute,...events.filter(x=>x.player===ev.player&&['goal','save','wide','post'].includes(x.type)).map(x=>x.minute));
     ev.minute=Math.max(ev.minute,last);

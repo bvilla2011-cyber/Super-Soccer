@@ -12,7 +12,7 @@ export function submitOffer(world,playerId,fee,type='transfer') {
   if(!['transfer','loan'].includes(type))throw new Error('Tipo de oferta no válido.');
   if(type==='loan'&&!source)throw new Error('No se puede ceder a un jugador libre.');
   if(!Number.isSafeInteger(fee)||fee<0||fee>own.budget)throw new Error('Introduce una oferta válida dentro de tu presupuesto.');
-  if(own.roster.length>=25)throw new Error('Tu plantilla está completa.');
+  if(own.roster.length>=30)throw new Error('Tu plantilla está completa.');
   const offers=world.offers??(world.offers=[]);
   if(offers.some(o=>o.playerId===playerId&&['pending','accepted'].includes(o.status)))throw new Error('Ya tienes una negociación abierta por este jugador.');
   const asking=transferPrice(player,source,own);

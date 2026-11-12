@@ -42,7 +42,8 @@ export class Renderer {
     this.offset={x:w/2-this.camera.x*scale,y:h/2-this.camera.y*scale};
     ctx.save();ctx.translate(this.offset.x,this.offset.y);ctx.scale(scale,scale);ctx.drawImage(this.staticPitch,-110,-100);
     this.drawGoals(ctx,game,false);
-    const sorted=[...game.players].filter(p=>!p.red).sort((a,b)=>a.y-b.y);
+    if(['entrance','exit'].includes(game.ceremony)){ctx.save();ctx.fillStyle='#091a20';ctx.fillRect(487,650,76,61);ctx.fillStyle='#f4da65';ctx.fillRect(487,650,76,4);ctx.fillStyle='#bcd3c5';ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.fillText(game.ceremony==='entrance'?'VESTUARIOS':'TÚNEL',525,680);ctx.restore();}
+    const sorted=[...game.players].filter(p=>!p.red&&(game.ceremony!=='exit'||p.y<672)).sort((a,b)=>a.y-b.y);
     for(const p of sorted)this.drawPlayer(ctx,p,game.teams[p.side].kits?.[p.side?'away':'home']??game.teams[p.side].colors,game.elapsed);
     this.drawReferee(ctx,game);
     if(!this.settings.reducedMotion&&game.state==='Action'&&game.activeAction){
@@ -82,7 +83,9 @@ export class Renderer {
       case 'diamonds':ctx.fillStyle=trim;ctx.beginPath();ctx.moveTo(-3,-20);ctx.lineTo(1,-16);ctx.lineTo(-3,-12);ctx.lineTo(-7,-16);ctx.fill();ctx.beginPath();ctx.moveTo(5,-15);ctx.lineTo(9,-11);ctx.lineTo(5,-7);ctx.lineTo(1,-11);ctx.fill();break;
     }
     ctx.restore();ctx.fillStyle=accent;ctx.fillRect(-7,-23,14,2.5);ctx.fillStyle='#fff';ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.fillText(p.number,0,-11);
-    ctx.fillStyle=skin;ctx.beginPath();ctx.ellipse(0,-29,7.6,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=hair;ctx.beginPath();ctx.ellipse(-.4,-33,8,5,0,Math.PI,Math.PI*2);ctx.fill();ctx.fillRect(-8,-33,3,5);ctx.fillStyle='#32271f';ctx.fillRect(p.headingX>0?4:-5,-29,1.5,1.5);
+    ctx.fillStyle=skin;ctx.beginPath();ctx.ellipse(0,-29,7.6,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=hair;ctx.beginPath();
+    const cut=p.hairstyle??p.hair%5;if(cut===0){ctx.ellipse(-.4,-33,8,5,0,Math.PI,Math.PI*2);ctx.fill();ctx.fillRect(-8,-33,3,5);}else if(cut===1){ctx.moveTo(-8,-30);ctx.lineTo(-7,-36);ctx.lineTo(-3,-37);ctx.lineTo(0,-34);ctx.lineTo(3,-37);ctx.lineTo(7,-35);ctx.lineTo(8,-30);ctx.closePath();ctx.fill();}else if(cut===2){ctx.ellipse(-.4,-34,8,6,0,Math.PI,Math.PI*2);ctx.fill();ctx.fillRect(-8,-34,2,4);ctx.fillRect(6,-34,2,4);}else if(cut===3){ctx.ellipse(-.4,-33,8,6,0,Math.PI,Math.PI*2);ctx.fill();ctx.fillRect(-8,-33,3,7);ctx.fillRect(5,-33,3,7);}else{ctx.ellipse(-.4,-34,8,7,0,Math.PI,Math.PI*2);ctx.fill();ctx.fillRect(-8,-34,3,9);ctx.fillRect(5,-34,3,9);}
+    ctx.fillStyle='#32271f';ctx.fillRect(p.headingX>0?4:-5,-29,1.5,1.5);if(p.iconic){ctx.fillStyle=hair;ctx.fillRect(-3,-22,6,1.5);}
     if(p.yellows){ctx.fillStyle='#f5cf54';ctx.fillRect(10,-29,4,6);}
     ctx.restore();
   }

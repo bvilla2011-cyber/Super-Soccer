@@ -217,7 +217,7 @@ function developPlayers(world,rng) {
 function aiTransfers(world,rng) {
   if(!transferOpen(world))return;
   for(let i=0;i<5;i++) {
-    const target=rng.pick(world.teams.filter(t=>t.id!==world.userTeam&&t.roster.length<25));if(!target)continue;
+    const target=rng.pick(world.teams.filter(t=>t.id!==world.userTeam&&t.roster.length<30));if(!target)continue;
     const source=rng.pick(world.teams.filter(t=>t.id!==world.userTeam&&t.id!==target.id&&t.roster.length>11));if(!source)continue;
     const p=rng.pick(source.roster.filter(p=>!p.loan&&!source.lineup.includes(p.id)&&p.position!=='POR'));
     if(!p)continue;const fee=transferPrice(p,source,target);
@@ -234,7 +234,7 @@ export function transferPrice(p,source,target) {
 const freeNumber=t=>{for(let n=2;n<100;n++)if(!t.roster.some(p=>p.number===n))return n;return 99;};
 export function buyPlayer(world,playerId,agreedFee=null,loan=false) {
   if(!transferOpen(world))throw new Error('El mercado está cerrado. Abre al inicio y a mitad de temporada.');
-  const own=teamById(world,world.userTeam);if(own.roster.length>=25)throw new Error('La plantilla admite 25 jugadores. Vende o cede una plaza.');
+  const own=teamById(world,world.userTeam);if(own.roster.length>=30)throw new Error('La plantilla admite 30 jugadores. Vende o cede una plaza.');
   const source=world.teams.find(t=>t.id!==own.id&&t.roster.some(p=>p.id===playerId));
   const p=source?.roster.find(p=>p.id===playerId)??world.freeAgents.find(p=>p.id===playerId);
   if(!p)throw new Error('El jugador ya no está disponible.');
@@ -256,7 +256,7 @@ export function sellPlayer(world,playerId) {
   if(own.roster.length<=11)throw new Error('Necesitas conservar once jugadores para disputar los partidos.');
   if(p.position==='POR'&&own.roster.filter(x=>x.position==='POR').length<=1)throw new Error('Necesitas conservar un portero.');
   const fee=Math.round(playerValue(p,own)*.82/10000)*10000;
-  const buyer=world.teams.filter(t=>t.id!==own.id&&t.roster.length<25&&t.budget>=fee).sort((a,b)=>Math.abs(teamRating(a)-overall(p))-Math.abs(teamRating(b)-overall(p)))[0];
+    const buyer=world.teams.filter(t=>t.id!==own.id&&t.roster.length<30&&t.budget>=fee).sort((a,b)=>Math.abs(teamRating(a)-overall(p))-Math.abs(teamRating(b)-overall(p)))[0];
   if(!buyer)throw new Error('No hay un club comprador con presupuesto.');
   own.roster=own.roster.filter(x=>x!==p);own.lineup=own.lineup.filter(id=>id!==p.id);own.budget+=fee;buyer.budget-=fee;buyer.roster.push(p);p.number=freeNumber(buyer);p.contract=3;
   world.transferLog.unshift({name:p.name,from:own.name,to:buyer.name,fee,season:world.season,event:world.eventIndex});world.transferLog=world.transferLog.slice(0,80);
@@ -272,7 +272,7 @@ export function upgrade(world,kind) {
   if(t[kind]>=5)throw new Error('Instalación al máximo.');const cost=t[kind]*t[kind]*1000000;if(t.budget<cost)throw new Error('Presupuesto insuficiente.');t.budget-=cost;t[kind]++;addFinance(world,'Mejora de instalaciones',-cost);return cost;
 }
 export function promoteYouth(world) {
-  const t=teamById(world,world.userTeam);if(t.youthSeason===world.season)throw new Error('Ya has ascendido a la promesa de esta temporada.');if(t.roster.length>=25)throw new Error('No quedan plazas en la plantilla.');
+  const t=teamById(world,world.userTeam);if(t.youthSeason===world.season)throw new Error('Ya has ascendido a la promesa de esta temporada.');if(t.roster.length>=30)throw new Error('No quedan plazas en la plantilla.');
   const p=withRandom(world,rng=>{const p=makePlayer(rng,`youth-${world.nextPlayerId++}`,rng.int(45,58)+t.academy*3,rng.pick(['POR','DEF','MED','DEL']));p.age=17;p.potential=clamp(overall(p)+rng.int(10,19)+t.academy*2,overall(p),97);return p;});
   p.number=freeNumber(t);p.contract=5;t.roster.push(p);t.youthSeason=world.season;news(world,`La cantera presenta a ${p.name}`,`${p.age} años, posición ${p.position}. Su historia acaba de empezar.`,'youth');return p;
 }
@@ -329,7 +329,7 @@ export function nextSeason(world) {
         p.potential=Math.max(overall(p),p.potential-(p.age>31?1:0));
       }
       t.roster=t.roster.filter(p=>!leaving.includes(p));t.lineup=t.lineup.filter(id=>t.roster.some(p=>p.id===id));
-      const depth={POR:2,DEF:5,MED:5,DEL:4};
+      const depth={POR:3,DEF:8,MED:8,DEL:6};
       for(const role of ['POR','DEF','MED','DEL'])while(t.roster.filter(p=>p.position===role).length<depth[role]) {
         const p=makePlayer(rng,`regen-${world.nextPlayerId++}`,rng.int(49,65)+t.academy*2,role);p.age=rng.int(17,20);p.potential=clamp(overall(p)+rng.int(8,21),overall(p),97);p.number=freeNumber(t);t.roster.push(p);
       }

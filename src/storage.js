@@ -102,7 +102,7 @@ export function validatePayload(payload) {
     const m=payload.match;
     assert(typeof m.fixtureId==='string'&&fixtureIds.has(m.fixtureId)&&m.snapshot&&Array.isArray(m.snapshot.players)&&m.snapshot.players.length<=22,'partido en curso.');
     assert(Array.isArray(m.snapshot.score)&&m.snapshot.score.length===2&&m.snapshot.score.every(n=>integer(n,0,99))&&finite(m.snapshot.clock,0,6000),'marcador en curso.');
-    assert(['Kickoff','InPlay','Action','HalfTime','FullTime','Shootout'].includes(m.snapshot.state),'estado de partido.');
+    assert(['Kickoff','InPlay','Action','HalfTime','FullTime','Shootout','Exit'].includes(m.snapshot.state),'estado de partido.');
     assert(m.snapshot.players.every(p=>p&&typeof p.id==='string'&&finite(p.x,-1000,3000)&&finite(p.y,-1000,3000)&&finite(p.vx,-3000,3000)&&finite(p.vy,-3000,3000)),'posiciones en curso.');
     assert(integer(m.snapshot.rngState,0,4294967295)&&integer(m.snapshot.half,1,2)&&finite(m.snapshot.duration,60,600)&&finite(m.snapshot.elapsed,0,1e7)&&finite(m.snapshot.stateTime,0,1e7),'reloj en curso.');
     assert(m.snapshot.firstHalf&&Array.isArray(m.snapshot.firstHalf.events)&&Array.isArray(m.snapshot.firstHalf.score)&&m.snapshot.firstHalf.players&&m.snapshot.firstHalf.stats,'primera parte en curso.');
@@ -164,7 +164,7 @@ export function importSave(text) {
   try{const payload=unpack(JSON.parse(text));payload.economyMigrated=rebaseCareerEconomy(payload.world);return payload;}catch(error){if(error instanceof SyntaxError)throw new Error('El archivo no contiene una partida JSON válida.');throw error;}
 }
 export function getSettings() {
-  const defaults={sound:true,music:false,volume:.45,duration:180,offside:false,quality:'high',reducedMotion:false,autoSwitch:true};
+  const defaults={sound:true,music:true,volume:.32,duration:180,offside:false,quality:'high',reducedMotion:false,autoSwitch:true};
   try {const s=JSON.parse(localStorage.getItem('super-soccer-settings')??'{}');return {...defaults,...s,duration:[120,180,300].includes(s.duration)?s.duration:180,volume:Math.max(0,Math.min(1,Number(s.volume??.45)||0))};}catch(e){return defaults;}
 }
 export function setSettings(settings) {try {localStorage.setItem('super-soccer-settings',JSON.stringify(settings));}catch(e){}}
