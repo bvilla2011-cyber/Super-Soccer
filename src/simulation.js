@@ -3,13 +3,24 @@ import { clamp, poisson, weighted } from './utils.js';
 
 export function strength(team) {
   const ps=activePlayers(team);
-  const avg=key=>ps.reduce((s,p)=>s+p.attributes[key]*(.68+.32*p.fitness/100)*(.94+.06*p.morale/100),0)/5;
-  const shape=FORMATIONS[team.formation]??FORMATIONS['2-1-1'];
+  const avg=key=>ps.length?ps.reduce((s,p)=>s+p.attributes[key]*(.68+.32*p.fitness/100)*(.94+.06*p.morale/100),0)/ps.length:25;
+  const shape=FORMATIONS[team.formation]??FORMATIONS['4-4-2'];
   const tactic=team.tactic==='attacking'?5:team.tactic==='defensive'?-4:0;
   return {attack:avg('shot')*.48+avg('control')*.26+avg('pace')*.26+shape.attack+tactic,
     defense:avg('defense')*.5+avg('keeping')*.28+avg('stamina')*.22+shape.defense-tactic*.55,
-    pass:avg('pass'),fitness:ps.reduce((s,p)=>s+p.fitness,0)/5};
+    pass:avg('pass'),fitness:ps.length?ps.reduce((s,p)=>s+p.fitness,0)/ps.length:0};
 }
+export const GOAL_FINISHES=[
+  {id:'power',label:'Disparo potente',weight:19},
+  {id:'curled',label:'Disparo colocado',weight:17},
+  {id:'longshot',label:'Gol desde fuera del área',weight:14},
+  {id:'header',label:'Remate de cabeza',weight:13},
+  {id:'volley',label:'Volea',weight:11},
+  {id:'chip',label:'Vaselina',weight:9},
+  {id:'tap-in',label:'Empuja a puerta vacía',weight:9},
+  {id:'bicycle',label:'Gol de chilena',weight:4},
+  {id:'nutmeg',label:'Regate y definición',weight:4}
+];
 export function penaltySeries(home,away,rng) {
   let score=[0,0],taken=[0,0];const kicks=[];
   const chance=team=>clamp(.68+(strength(team).attack-60)/230,.5,.9);
@@ -42,7 +53,8 @@ export function simulateMatch(home,away,rng,{knockout=false,difficulty='club',us
       const assist=helpers.length&&rng()<.76?weighted(helpers,p=>p.attributes.pass,rng):null;
       players[scorer.id].goals++;players[scorer.id].shots++;
       if(assist) players[assist.id].assists++;
-      events.push({minute:startMinute+rng.int(1,minutes),type:'goal',side,player:scorer.id,name:scorer.name,assist:assist?.name??null});
+      const finish=weighted(GOAL_FINISHES,move=>move.weight,rng);
+      events.push({minute:startMinute+rng.int(1,minutes),type:'goal',side,player:scorer.id,name:scorer.name,assist:assist?.name??null,finish:finish.id,finishLabel:finish.label});
     }
     for(const p of active) {
       const s=players[p.id];

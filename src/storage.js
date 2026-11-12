@@ -10,8 +10,8 @@ function openDB() {
     if(!globalThis.indexedDB)return reject(new Error('IndexedDB no disponible'));
     const req=indexedDB.open('super-soccer-offline',1);
     req.onupgradeneeded=()=>req.result.createObjectStore('saves',{keyPath:'id'});
-    req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
-    req.onblocked=()=>reject(new Error('Cierra otras pestañas del juego para actualizar el guardado.'));
+    req.onsuccess=()=>{const db=req.result;db.onversionchange=()=>{db.close();dbPromise=null;};resolve(db);};req.onerror=()=>{dbPromise=null;reject(req.error);};
+    req.onblocked=()=>{dbPromise=null;reject(new Error('Cierra otras pestañas del juego para actualizar el guardado.'));};
   });
   return dbPromise;
 }
@@ -70,8 +70,9 @@ export function validatePayload(payload) {
     assert(Array.isArray(t.colors)&&t.colors.length===2&&t.colors.every(c=>/^#[0-9a-f]{6}$/i.test(c)),'colores del club.');
     assert(finite(t.budget,-1e10,1e12)&&integer(t.division,1,3),'economía o división.');
     assert(Array.isArray(t.roster)&&t.roster.length>=1&&t.roster.length<=30,'plantilla.');
-    assert(Array.isArray(t.lineup)&&t.lineup.length<=5&&new Set(t.lineup).size===t.lineup.length,'alineación.');
-    assert(['2-1-1','1-2-1','1-1-2','4-4-2','3-5-2'].includes(t.formation)&&['balanced','attacking','defensive'].includes(t.tactic),'táctica.');
+    assert(Array.isArray(t.lineup)&&t.lineup.length<=11&&new Set(t.lineup).size===t.lineup.length,'alineación.');
+    assert(['2-1-1','1-2-1','1-1-2','4-4-2','4-3-3','4-2-3-1','3-5-2','3-4-3'].includes(t.formation)&&['balanced','attacking','defensive'].includes(t.tactic),'táctica.');
+    if(t.kits)assert(['home','away'].every(side=>t.kits[side]&&/^#[0-9a-f]{6}$/i.test(t.kits[side].primary)&&/^#[0-9a-f]{6}$/i.test(t.kits[side].secondary)&&['solid','halves','stripes','sash','hoops','diamonds'].includes(t.kits[side].pattern)),'equipaciones.');
     assert(integer(t.academy,1,5)&&integer(t.trainingLevel,1,5)&&Array.isArray(t.honours)&&Array.isArray(t.form)&&t.form.length<=5&&t.form.every(f=>['V','E','D'].includes(f)),'instalaciones.');
     for(const p of t.roster)validatePlayer(p,players);
     assert(t.lineup.every(id=>t.roster.some(p=>p.id===id)),'alineación ajena a la plantilla.');
@@ -99,7 +100,7 @@ export function validatePayload(payload) {
   assert(finite(w.reputation,0,100)&&integer(w.nextPlayerId,1,1e9),'progresión.');
   if(payload.match) {
     const m=payload.match;
-    assert(typeof m.fixtureId==='string'&&fixtureIds.has(m.fixtureId)&&m.snapshot&&Array.isArray(m.snapshot.players)&&m.snapshot.players.length<=20,'partido en curso.');
+    assert(typeof m.fixtureId==='string'&&fixtureIds.has(m.fixtureId)&&m.snapshot&&Array.isArray(m.snapshot.players)&&m.snapshot.players.length<=22,'partido en curso.');
     assert(Array.isArray(m.snapshot.score)&&m.snapshot.score.length===2&&m.snapshot.score.every(n=>integer(n,0,99))&&finite(m.snapshot.clock,0,6000),'marcador en curso.');
     assert(['Kickoff','InPlay','Action','HalfTime','FullTime','Shootout'].includes(m.snapshot.state),'estado de partido.');
     assert(m.snapshot.players.every(p=>p&&typeof p.id==='string'&&finite(p.x,-1000,3000)&&finite(p.y,-1000,3000)&&finite(p.vx,-3000,3000)&&finite(p.vy,-3000,3000)),'posiciones en curso.');

@@ -1,6 +1,6 @@
 # Economía del mercado · Super Soccer
 
-Actualizado el 12 de noviembre de 2026. Las referencias son las medias por jugador que Transfermarkt publica para la temporada 2026/27. El elenco del juego tiene 12 jugadores por club, así que las cifras son una calibración del juego, no una copia literal de plantillas reales.
+Actualizado el 12 de noviembre de 2026. Las referencias son las medias por jugador que Transfermarkt publica para la temporada 2026/27. El universo del juego usa plantillas de 16 jugadores (once titulares y cinco suplentes), así que las cifras son una calibración del juego, no una copia literal de plantillas reales.
 
 | País | Primera | Segunda | Tercera | Competiciones de referencia |
 |---|---:|---:|---:|---|

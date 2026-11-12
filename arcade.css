@@ -11,3 +11,20 @@ h1,h2,h3,.brand,.btn,.nav-item,.tag,.eyebrow,.tiny{font-family:ArcadeDisplay,Imp
 @media(max-width:900px){.club-identity,.hud-season{display:none}.arcade-hub{grid-template-columns:1fr}.hub-launchers{grid-template-columns:repeat(2,1fr)}.fixture-hero{min-height:360px}.title-corner{right:3vw;bottom:12%}.title-menu{width:70vw}.roster-cards,.market-cards{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}.profile-columns{grid-template-columns:1fr}}
 @media(max-width:600px){.arcade-title-screen{padding:0 18px}.title-wordmark{font-size:65px}.title-corner{display:none}.arcade-title-screen footer{left:18px;right:18px;font-size:8px}.content{padding:17px 13px 90px}.topbar{padding:10px 12px}.hud-bank{font-size:10px}.game-dock{padding:5px!important}.game-dock .nav-item{font-size:7px}.game-dock .nav-item .game-icon{width:19px;height:19px}.hub-launchers{grid-template-columns:1fr 1fr}.fixture-teams{padding-left:0;padding-right:0}.team-contender strong{font-size:13px}.fixture-buttons{flex-wrap:wrap}.squad-layout{grid-template-columns:1fr}.tactics-pitch{height:240px}.roster-cards,.market-cards{grid-template-columns:repeat(2,minmax(0,1fr));padding:9px;gap:8px}.player-tile{min-height:190px}.player-card-main{height:145px}.card-portrait{height:105px}.card-name strong{font-size:10px}.card-microstats{font-size:8px}.market-filters{align-items:stretch}.market-filters label{min-width:calc(50% - 8px)}.market-filters .search-field{flex-basis:100%}}
 .card-price small{display:block;font:7px var(--font);opacity:.72;letter-spacing:.5px;margin-bottom:3px}
+
+/* Final matchday presentation and tactile lineup feedback */
+.kit-showcase{display:grid;grid-template-columns:minmax(200px,1fr) repeat(2,minmax(130px,.48fr));gap:18px;align-items:center;padding:20px;margin:18px 0;background:linear-gradient(120deg,#242a70,#32245f)}
+.kit-showcase article{display:grid;justify-items:center;gap:8px;padding:14px;background:#11183d80;border:2px solid #6d77b8;border-radius:12px;font:10px ArcadeDisplay;color:var(--cyan);text-align:center}
+.kit-showcase article svg{filter:drop-shadow(0 7px 0 #101335);animation:kit-float 3.2s ease-in-out infinite}
+.kit-showcase article:nth-of-type(2) svg{animation-delay:.7s}
+@keyframes kit-float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}
+.market-recommendation-note{display:inline-flex;margin:0 0 12px;padding:9px 12px;border:2px solid #d8ef75;border-radius:9px;background:#293864;color:#e7f59d;font:10px ArcadeDisplay;letter-spacing:.2px}
+.bench-card{cursor:grab;transition:transform .16s,filter .16s,opacity .16s}.bench-card:hover{transform:translateY(-4px);filter:brightness(1.12)}.bench-card.dragging{opacity:.42;transform:scale(.96)}
+.pitch-shirt{transition:left .25s ease,bottom .25s ease,transform .18s,filter .18s}.pitch-shirt:hover{transform:translate(-50%,-3px) scale(1.08);filter:brightness(1.2)}.pitch-shirt.drop-target{outline:3px dashed var(--yellow);outline-offset:3px;filter:brightness(1.3);animation:drop-pulse .65s ease-in-out infinite alternate}
+@keyframes drop-pulse{to{transform:translate(-50%,-2px) scale(1.1)}}
+.drag-instruction{margin:10px 0;padding:10px 12px;border-left:4px solid var(--yellow);background:#10133577;color:#dce5f5;font-size:12px}
+.starting-card{animation:starter-arrive .35s ease-out both}.starter-stamp{display:inline-flex;align-items:center;gap:4px}
+@keyframes starter-arrive{from{opacity:.45;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+[data-action="quick-sim"]{background:linear-gradient(115deg,#ffe35b,#ffbc4b);color:#171b3e;border-color:#101335;text-shadow:none}
+@media(max-width:700px){.kit-showcase{grid-template-columns:1fr 1fr}.kit-showcase>div:first-child{grid-column:1/-1}.market-recommendation-note{font-size:9px;line-height:1.5}}
+@media(prefers-reduced-motion:reduce){.kit-showcase article svg,.bench-card,.pitch-shirt,.starting-card{animation:none!important;transition:none!important}}

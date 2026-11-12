@@ -25,12 +25,17 @@ export const COUNTRIES = [
 ];
 
 export const POSITIONS = ['POR','DEF','MED','DEL'];
+const formation = (name, roles, bases, attack=0, defense=0) => ({name,roles,bases,attack,defense});
 export const FORMATIONS = {
-  '2-1-1': { name:'Equilibrado · 2-1-1', bases:[[.06,.5],[.29,.27],[.29,.73],[.52,.5],[.74,.5]], attack:0, defense:0 },
-  '1-2-1': { name:'Posesión · 1-2-1', bases:[[.06,.5],[.29,.5],[.52,.25],[.52,.75],[.76,.5]], attack:2, defense:-1 },
-  '1-1-2': { name:'Ofensivo · 1-1-2', bases:[[.06,.5],[.28,.5],[.5,.5],[.73,.28],[.73,.72]], attack:5, defense:-4 },
-  '4-4-2': { name:'Bloque 4-4-2 · adaptado a 5', bases:[[.06,.5],[.31,.3],[.31,.7],[.6,.28],[.69,.69]], attack:1, defense:1 },
-  '3-5-2': { name:'Presión 3-5-2 · adaptado a 5', bases:[[.06,.5],[.27,.5],[.49,.25],[.49,.75],[.76,.5]], attack:3, defense:-2 }
+  '4-4-2': formation('Equilibrado · 4-4-2', ['POR','DEF','DEF','DEF','DEF','MED','MED','MED','MED','DEL','DEL'], [[.055,.5],[.24,.17],[.24,.39],[.24,.61],[.24,.83],[.46,.17],[.46,.39],[.46,.61],[.46,.83],[.73,.34],[.73,.66],], 1, 1),
+  '4-3-3': formation('Ofensivo · 4-3-3', ['POR','DEF','DEF','DEF','DEF','MED','MED','MED','DEL','DEL','DEL'], [[.055,.5],[.24,.17],[.24,.39],[.24,.61],[.24,.83],[.48,.24],[.48,.5],[.48,.76],[.75,.2],[.75,.5],[.75,.8]], 5, -3),
+  '4-2-3-1': formation('Control · 4-2-3-1', ['POR','DEF','DEF','DEF','DEF','MED','MED','MED','MED','MED','DEL'], [[.055,.5],[.24,.17],[.24,.39],[.24,.61],[.24,.83],[.42,.37],[.42,.63],[.61,.2],[.61,.5],[.61,.8],[.8,.5]], 2, 2),
+  '3-5-2': formation('Presión · 3-5-2', ['POR','DEF','DEF','DEF','MED','MED','MED','MED','MED','DEL','DEL'], [[.055,.5],[.25,.22],[.25,.5],[.25,.78],[.48,.14],[.52,.32],[.48,.5],[.52,.68],[.48,.86],[.75,.34],[.75,.66]], 3, -1),
+  '3-4-3': formation('Ataque · 3-4-3', ['POR','DEF','DEF','DEF','MED','MED','MED','MED','DEL','DEL','DEL'], [[.055,.5],[.25,.22],[.25,.5],[.25,.78],[.48,.2],[.48,.4],[.48,.6],[.48,.8],[.75,.2],[.75,.5],[.75,.8]], 6, -4),
+  // Legacy formation ids remain loadable; old saves are migrated to 4-4-2.
+  '2-1-1': formation('Equilibrado · 4-4-2', ['POR','DEF','DEF','DEF','DEF','MED','MED','MED','MED','DEL','DEL'], [[.055,.5],[.24,.17],[.24,.39],[.24,.61],[.24,.83],[.46,.17],[.46,.39],[.46,.61],[.46,.83],[.73,.34],[.73,.66]], 1, 1),
+  '1-2-1': formation('Posesión · 4-2-3-1', ['POR','DEF','DEF','DEF','DEF','MED','MED','MED','MED','MED','DEL'], [[.055,.5],[.24,.17],[.24,.39],[.24,.61],[.24,.83],[.42,.37],[.42,.63],[.61,.2],[.61,.5],[.61,.8],[.8,.5]], 2, 2),
+  '1-1-2': formation('Ofensivo · 4-3-3', ['POR','DEF','DEF','DEF','DEF','MED','MED','MED','DEL','DEL','DEL'], [[.055,.5],[.24,.17],[.24,.39],[.24,.61],[.24,.83],[.48,.24],[.48,.5],[.48,.76],[.75,.2],[.75,.5],[.75,.8]], 5, -3)
 };
 export const DIFFICULTIES = {
   rookie:{name:'Debutante',reaction:.65,accuracy:.78,speed:.92,bonus:5},
@@ -58,7 +63,7 @@ export const MARKET_REFERENCE_AVERAGES_V2 = {
   nl:[2_860_000,299_000,4_000]
 };
 const REFERENCE_MODEL_AVERAGES={1:15_000_000,2:1_250_000,3:380_000};
-export const ECONOMY_VERSION=3;
+export const ECONOMY_VERSION=4;
 export function playerValue(p,team=null,marketAverages=MARKET_REFERENCE_AVERAGES) {
   const value=overall(p),ageFactor=p.age<23?1.45:p.age>30?.62:1;
   const potentialFactor=1+Math.max(0,p.potential-value)/22;
@@ -75,6 +80,61 @@ export function initialTransferBudget(team,marketAverages=MARKET_REFERENCE_AVERA
   return Math.round(clamp(teamMarketValue(team,marketAverages)*.12,...limits)/100_000)*100_000;
 }
 export const wage = (p,team=null) => Math.round(playerValue(p,team) / 4800 / 100) * 100 + 200;
+const KIT_PATTERNS=['solid','halves','stripes','sash','hoops','diamonds'];
+const AWAY_COLORS=['#f0eee4','#23324e','#69c8c0','#d1b653','#ca4b57','#4e3b8d','#b9d8e5','#e18b4c'];
+export function teamKits(teamId,colors=['#387eae','#e6dec1']) {
+  const n=parseInt(hash(teamId),16)>>>0,homePattern=KIT_PATTERNS[n%KIT_PATTERNS.length],awayPattern=KIT_PATTERNS[(n+3)%KIT_PATTERNS.length];
+  const away=AWAY_COLORS[(n>>>5)%AWAY_COLORS.length];
+  return {home:{primary:colors[0],secondary:colors[1],accent:colors[1],pattern:homePattern},away:{primary:away,secondary:colors[0],accent:colors[1],pattern:awayPattern}};
+}
+export function upgradeTeamRoster(team) {
+  let changed=false;
+  const oldLength=team.roster?.length??0;
+  team.roster??=[];team.lineup??=[];
+  if(!team.kits){team.kits=teamKits(team.id,team.colors);changed=true;}
+  if(oldLength<16) {
+    const targets={POR:2,DEF:5,MED:5,DEL:4};
+    const rng=random(parseInt(hash(`eleven-${team.id}`),16)>>>0),base=Math.max(48,teamRating(team)-7);
+    for(const role of POSITIONS) {
+      let count=team.roster.filter(p=>p.position===role).length;
+      while(count<targets[role]) {
+        let number=12+team.roster.length;while(team.roster.some(p=>p.number===number))number++;
+        const player=makePlayer(rng,`upgrade-${team.id}-${team.roster.length}`,clamp(base+rng.int(-3,4),45,89),role);
+        player.number=number;team.roster.push(player);count++;changed=true;
+      }
+    }
+    const preferred=team.lineup.map(id=>team.roster.find(p=>p.id===id)).filter(Boolean),chosen=[];
+    for(const [role,count] of [['POR',1],['DEF',4],['MED',4],['DEL',2]]) {
+      const pool=[...preferred.filter(p=>p.position===role),...team.roster.filter(p=>p.position===role&&!preferred.includes(p)).sort((a,b)=>overall(b)-overall(a))];
+      for(const p of pool.slice(0,count))if(!chosen.includes(p))chosen.push(p);
+    }
+    team.lineup=chosen.map(p=>p.id);team.formation='4-4-2';changed=true;
+  } else {
+    const valid=team.lineup.filter(id=>team.roster.some(p=>p.id===id));
+    if(valid.length!==team.lineup.length){team.lineup=valid;changed=true;}
+    if(!FORMATIONS[team.formation]||['2-1-1','1-2-1','1-1-2'].includes(team.formation)){team.formation='4-4-2';changed=true;}
+    if(team.lineup.length!==11) {
+      const preferred=team.lineup.map(id=>team.roster.find(p=>p.id===id)).filter(Boolean),chosen=[];
+      for(const [role,count] of [['POR',1],['DEF',4],['MED',4],['DEL',2]]) {
+        const pool=[...preferred.filter(p=>p.position===role),...team.roster.filter(p=>p.position===role&&!preferred.includes(p)).sort((a,b)=>overall(b)-overall(a))];
+        for(const p of pool.slice(0,count))if(!chosen.includes(p))chosen.push(p);
+      }
+      team.lineup=chosen.map(p=>p.id);team.formation='4-4-2';changed=true;
+    }
+  }
+  return changed;
+}
+export function formationCoordinates(team,players) {
+  const shape=FORMATIONS[team.formation]??FORMATIONS['4-4-2'],used=new Set(),roleOrder={POR:0,DEF:1,MED:2,DEL:3};
+  return players.map(p=>{
+    let best=-1,bestScore=Infinity;
+    for(let i=0;i<shape.roles.length;i++)if(!used.has(i)) {
+      const role=shape.roles[i],score=role===p.position?0:1+Math.abs((roleOrder[role]??0)-(roleOrder[p.position]??0));
+      if(score<bestScore){best=i;bestScore=score;}
+    }
+    if(best<0)return shape.bases[0];used.add(best);return shape.bases[best];
+  });
+}
 export const emptyStats = () => ({matches:0,minutes:0,goals:0,assists:0,shots:0,saves:0,yellow:0,red:0,rating:0});
 export function makePlayer(rng, id, rating, position, star = null) {
   const age = star ? (/Yamir|Dué|Yildan/.test(star[0]) ? 19 : /Levandos|Salá|Grizán/.test(star[0]) ? 33 : rng.int(23,28)) : rng.int(18,33);
@@ -97,14 +157,14 @@ export function createTeams(seedNumber) {
     const all = [...c.clubs, ...reserveNames.map((name,i)=>seed(name, 64+i%5, ['#5380b0','#b74a55','#479273','#c8ac48'][i%4])),...third.map((name,i)=>seed(name,58+i%5,['#814bac','#df743e','#4388ba','#379673'][i%4]))];
     all.forEach((t,i)=>{
       const id = `${c.id}-${i+1}`;
-      const team = {id,name:t.name,short:t.name.split(' ').slice(0,2).join(' '),code:t.name.replace(/[^a-zA-Z]/g,'').slice(0,3).toUpperCase(),country:c.id,division:i<c.clubs.length?1:i<c.clubs.length+reserveNames.length?2:3,colors:t.colors,stadium:`Estadio ${t.name.split(' ')[0]}`,capacity:12000+(t.rating-60)*1800,budget:0,formation:'2-1-1',tactic:'balanced',academy:1,trainingLevel:1,roster:[],lineup:[],honours:[],form:[]};
-      const roles = ['POR','DEF','DEF','MED','DEL','POR','DEF','MED','MED','DEL','DEL','DEF'];
+      const team = {id,name:t.name,short:t.name.split(' ').slice(0,2).join(' '),code:t.name.replace(/[^a-zA-Z]/g,'').slice(0,3).toUpperCase(),country:c.id,division:i<c.clubs.length?1:i<c.clubs.length+reserveNames.length?2:3,colors:t.colors,kits:teamKits(id,t.colors),stadium:`Estadio ${t.name.split(' ')[0]}`,capacity:12000+(t.rating-60)*1800,budget:0,formation:'4-4-2',tactic:'balanced',academy:1,trainingLevel:1,roster:[],lineup:[],honours:[],form:[]};
+      const roles = ['POR','DEF','DEF','DEF','DEF','MED','MED','MED','MED','DEL','DEL','POR','DEF','MED','DEL','DEF'];
       roles.forEach((position,j)=>{
         const star = t.stars.find(s=>s[1]===position && !team.roster.some(p=>p.name===s[0]));
         const p = makePlayer(rng,`${id}-p${j}`,star?.[2] ?? t.rating-rng.int(0,j<5?6:12),position,star);
-        p.number = [1,4,5,8,9,13,3,6,10,11,7,2][j]; team.roster.push(p);
+        p.number = [1,4,5,3,2,6,8,10,7,9,11,13,12,14,15,16][j]; team.roster.push(p);
       });
-      team.lineup = team.roster.slice(0,5).map(p=>p.id);team.budget=initialTransferBudget(team);teams.push(team);
+      team.lineup = team.roster.slice(0,11).map(p=>p.id);team.budget=initialTransferBudget(team);teams.push(team);
     });
   }
   return { teams, rngState:rng.state() };
@@ -112,7 +172,7 @@ export function createTeams(seedNumber) {
 export const teamById = (world,id) => world.teams.find(t=>t.id===id);
 export const countryById = id => COUNTRIES.find(c=>c.id===id);
 export function activePlayers(team) {
-  const limit=clamp(team.matchLimit??5,1,5);
+  const limit=clamp(team.matchLimit??11,1,11);
   const available = team.roster.filter(p=>p.injury===0 && p.ban===0);
   const selected = team.lineup.map(id=>available.find(p=>p.id===id)).filter(Boolean);
   const keeper = selected.find(p=>p.position==='POR') ?? available.filter(p=>p.position==='POR').sort((a,b)=>overall(b)-overall(a))[0];
@@ -120,13 +180,38 @@ export function activePlayers(team) {
   for (const p of available.filter(p=>p.position!=='POR').sort((a,b)=>overall(b)-overall(a))) if(field.length<limit-(keeper?1:0)&&!field.includes(p)) field.push(p);
   // Emergency players retain their actual position, no duplication or magical recovery.
   if (!keeper && available.length) return available.slice(0,limit);
-  return [keeper,...field].filter(Boolean);
+  return [keeper,...field].filter(Boolean).sort((a,b)=>({POR:0,DEF:1,MED:2,DEL:3}[a.position]-({POR:0,DEF:1,MED:2,DEL:3}[b.position]))||team.lineup.indexOf(a.id)-team.lineup.indexOf(b.id));
 }
 export function teamRating(team) {
   const ps = activePlayers(team);
-  return ps.length ? Math.round(ps.reduce((s,p)=>s+overall(p)*(.72+.28*p.fitness/100),0)/5) : 25;
+  return ps.length ? Math.round(ps.reduce((s,p)=>s+overall(p)*(.72+.28*p.fitness/100),0)/ps.length) : 25;
 }
 export function badgeSVG(team, size = 48) {
-  const key = parseInt(hash(team.id),16)%3;
-  return `<svg class="crest" width="${size}" height="${size}" viewBox="0 0 64 72" aria-hidden="true"><path d="M5 5L32 1 59 5V36Q58 56 32 69 6 56 5 36Z" fill="${team.colors[0]}" stroke="${team.colors[1]}" stroke-width="3"/><path d="${key===0?'M12 15H52V23H12ZM12 31H52V39H12Z':key===1?'M18 9H27V54L18 46ZM37 9H46V46L37 54Z':'M9 39L48 7 56 19 19 54Z'}" fill="${team.colors[1]}" opacity=".85"/><circle cx="32" cy="30" r="12" fill="#102329"/><text x="32" y="34" text-anchor="middle" font-size="10" font-family="sans-serif" font-weight="900" fill="#fff">${team.code}</text><path d="M25 51L32 46 39 51 36 59H28Z" fill="${team.colors[1]}"/></svg>`;
+  const colors=team.colors??['#356d9c','#f1e5bd'],key=parseInt(hash(team.id),16)%6;
+  const motif=[
+    '<path d="M14 13H50V21H14ZM14 29H50V37H14ZM14 45H50V53H14Z"/>',
+    '<path d="M12 48L43 12 53 19 22 55Z"/><circle cx="33" cy="34" r="7" fill="#101335" stroke="currentColor" stroke-width="3"/>',
+    '<path d="M14 17L25 12 32 19 39 12 50 17V48L32 59 14 48Z"/><path d="M18 29H46V37H18Z" fill="#101335"/>',
+    '<path d="M17 13H24V53H17ZM29 13H36V53H29ZM41 13H48V53H41Z"/>',
+    '<path d="M16 18L32 9 48 18V47L32 57 16 47Z"/><path d="M32 16L36 27 48 28 39 36 42 48 32 42 22 48 25 36 16 28 28 27Z" fill="#101335"/>',
+    '<path d="M13 19Q32 31 51 19V27Q32 39 13 27ZM13 39Q32 51 51 39V47Q32 59 13 47Z"/>'
+  ][key];
+  return `<svg class="crest" width="${size}" height="${size}" viewBox="0 0 64 72" aria-hidden="true"><path d="M5 5L32 1 59 5V36Q58 56 32 69 6 56 5 36Z" fill="${colors[0]}" stroke="${colors[1]}" stroke-width="3"/><g fill="${colors[1]}" opacity=".9">${motif}</g><path d="M22 55L32 48 42 55 39 62H25Z" fill="#101335" opacity=".88"/><text x="32" y="43" text-anchor="middle" font-size="9" font-family="sans-serif" font-weight="900" fill="#fff">${team.code??'SS'}</text></svg>`;
+}
+export function competitionBadgeSVG(comp,size=48) {
+  const palettes=[['#f2c653','#34447c'],['#5fe0d7','#263d83'],['#f38468','#513a93'],['#b8e66b','#28559c'],['#cda5ff','#293d78'],['#f2e8ce','#3e7d91']];
+  const key=parseInt(hash(comp.id),16)%palettes.length,[gold,ink]=palettes[key],mark=parseInt(hash(`${comp.id}-mark`),16)%4;
+  const symbol=['<path d="M25 20H39V34Q39 42 32 45 25 42 25 34ZM20 22H25V31Q25 36 30 37M39 22H44V31Q44 36 34 37M28 44V49H36V44M24 50H40V54H24Z"/>','<path d="M32 14L36 25 48 26 39 34 42 46 32 40 22 46 25 34 16 26 28 25Z"/>','<circle cx="32" cy="32" r="17"/><path d="M32 17L40 25 37 38 27 44 20 34 23 23Z" fill="none" stroke="currentColor" stroke-width="3"/>','<path d="M18 43Q18 26 32 18 46 26 46 43L32 53Z"/><path d="M24 38L31 31 36 36 42 28" fill="none" stroke="#101335" stroke-width="3"/>'][mark];
+  const code=(comp.short??comp.name?.split(/\s+/).map(x=>x[0]).join('').slice(0,3)??'SS').toUpperCase();
+  return `<svg class="competition-crest" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 3L56 13V32Q54 51 32 61 10 51 8 32V13Z" fill="${ink}" stroke="${gold}" stroke-width="3"/><g fill="${gold}" stroke="${gold}" color="${gold}">${symbol}</g><text x="32" y="57" text-anchor="middle" font-size="7" font-family="sans-serif" font-weight="900" fill="#fff">${code}</text></svg>`;
+}
+export function kitSVG(team,side='home',size=58) {
+  const kit=team.kits?.[side]??teamKits(team.id,team.colors)[side],p=kit.primary,s=kit.secondary,a=kit.accent??s,pattern=kit.pattern??'solid';
+  let detail='';
+  if(pattern==='halves')detail=`<path d="M32 12H49V44H32Z" fill="${s}"/>`;
+  if(pattern==='stripes')detail=`<path d="M17 13H23V44H17ZM30 13H36V44H30ZM43 13H49V44H43Z" fill="${s}"/>`;
+  if(pattern==='sash')detail=`<path d="M18 35L41 12 49 18 25 43Z" fill="${s}"/>`;
+  if(pattern==='hoops')detail=`<path d="M16 23H50V29H16ZM17 35H49V40H17Z" fill="${s}"/>`;
+  if(pattern==='diamonds')detail=`<path d="M23 19L28 24 23 29 18 24ZM40 28L45 33 40 38 35 33Z" fill="${s}"/>`;
+  return `<svg class="kit-icon" width="${size}" height="${size}" viewBox="0 0 64 64" role="img" aria-label="${side==='home'?'Primera':'Segunda'} equipación de ${team.name}"><path d="M18 8L25 5Q32 11 39 5L46 8 59 18 51 29 45 25V56H19V25L13 29 5 18Z" fill="${p}"/><path d="M18 8L25 5Q32 11 39 5L46 8 59 18 51 29 45 25V56H19V25L13 29 5 18Z" fill="none" stroke="${a}" stroke-width="2"/>${detail}<path d="M25 6Q32 14 39 6" fill="none" stroke="${a}" stroke-width="3"/><text x="32" y="39" text-anchor="middle" font-size="8" font-weight="900" font-family="Arial" fill="${a}">${team.code??'SS'}</text></svg>`;
 }

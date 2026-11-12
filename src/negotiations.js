@@ -12,7 +12,7 @@ export function submitOffer(world,playerId,fee,type='transfer') {
   if(!['transfer','loan'].includes(type))throw new Error('Tipo de oferta no válido.');
   if(type==='loan'&&!source)throw new Error('No se puede ceder a un jugador libre.');
   if(!Number.isSafeInteger(fee)||fee<0||fee>own.budget)throw new Error('Introduce una oferta válida dentro de tu presupuesto.');
-  if(own.roster.length>=20)throw new Error('Tu plantilla está completa.');
+  if(own.roster.length>=25)throw new Error('Tu plantilla está completa.');
   const offers=world.offers??(world.offers=[]);
   if(offers.some(o=>o.playerId===playerId&&['pending','accepted'].includes(o.status)))throw new Error('Ya tienes una negociación abierta por este jugador.');
   const asking=transferPrice(player,source,own);
@@ -28,7 +28,7 @@ export function advanceDay(world) {
   for(const o of world.offers??[])if(o.status==='pending'&&o.due<=world.day) {
     const {source,player}=locate(world,o.playerId);
     if(!player||(o.sourceId??null)!==(source?.id??null)||player.loan){o.status='unavailable';}
-    else if(source&&(source.roster.length<=8||(player.position==='POR'&&source.roster.filter(p=>p.position==='POR').length<=1))){o.status='unavailable';}
+    else if(source&&(source.roster.length<=11||(player.position==='POR'&&source.roster.filter(p=>p.position==='POR').length<=1))){o.status='unavailable';}
     else if(o.fee>=o.asking*.9)o.status='accepted';
     else {o.status='rejected';o.counter=Math.max(o.fee+10000,Math.round(o.asking*.94/10000)*10000);}
     o.unread=true;
