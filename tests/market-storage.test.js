@@ -31,3 +31,6 @@ test('save slots are independent and preserve a recoverable previous generation'
  const w=createCareer({seed:4,manager:'Primero'});await saveSlot(1,w);w.manager='Segundo';await saveSlot(1,w);await saveSlot(2,createCareer({seed:5,manager:'Otra carrera'}));assert.equal((await loadSlot(1)).world.manager,'Segundo');assert.equal((await loadSlot(1,{backup:true})).world.manager,'Primero');assert.equal((await loadSlot(2)).world.manager,'Otra carrera');assert.equal((await listSlots()).filter(s=>s.exists).length,2);
  const record=JSON.parse(memory.get('super-soccer-save-1'));record.current.checksum='broken';memory.set('super-soccer-save-1',JSON.stringify(record));const recovered=await loadSlot(1);assert.ok(recovered.recovered);assert.equal(recovered.world.manager,'Primero');
 });
+test('a mid-season transfer preserves season and career statistics',()=>{
+ const w=createCareer({seed:42});advance(w);const source=teamById(w,'en-1'),p=source.roster[4];const season=structuredClone(p.stats),career=structuredClone(p.career);buyPlayer(w,p.id);assert.deepEqual(p.stats,season);assert.deepEqual(p.career,career);
+});

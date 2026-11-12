@@ -2,7 +2,7 @@
 
 ## Pruebas automatizadas
 
-`npm run check` comprueba sintaxis JavaScript y JSON. `npm test` ejecuta 21 pruebas del motor, competiciones, mercado, evolución y persistencia. `npm run build` genera una distribución estática sin dependencias.
+`npm run check` comprueba sintaxis JavaScript y JSON. `npm test` ejecuta 22 pruebas del motor, competiciones, mercado, evolución y persistencia. `npm run build` genera una distribución estática sin dependencias.
 
 Casos cubiertos:
 
@@ -11,7 +11,7 @@ Casos cubiertos:
 - Una temporada europea completa: 31 campeones, tablas y goles consistentes.
 - Cinco temporadas consecutivas: rosters válidos, IDs únicos y tamaños de división constantes.
 - Ascensos/descensos y nuevas temporadas de liga/copa de ocho.
-- Compra y venta con conservación de fondos; presupuesto, contratos y restricciones de mercado/plantilla.
+- Compra y venta con conservación de fondos y estadísticas de temporada/carrera; presupuesto, contratos y restricciones de mercado/plantilla.
 - Cantera una vez por curso; inversión cobrada y evolución sin superar potencial; retiradas.
 - Exportación/importación, referencias inválidas, datos corruptos y restauración de la generación anterior.
 - Tandas de penaltis reproducibles con ganador único y lanzamientos coherentes.

@@ -217,7 +217,7 @@ export function buyPlayer(world,playerId) {
   const fee=transferPrice(p,source,own);if(own.budget<fee)throw new Error('Presupuesto insuficiente para este fichaje.');
   if(source){source.roster=source.roster.filter(x=>x!==p);source.lineup=source.lineup.filter(id=>id!==p.id);source.budget+=fee;}
   else world.freeAgents=world.freeAgents.filter(x=>x!==p);
-  own.budget-=fee;p.number=freeNumber(own);p.contract=4;p.morale=85;p.stats=emptyStats();own.roster.push(p);
+  own.budget-=fee;p.number=freeNumber(own);p.contract=4;p.morale=85;own.roster.push(p);
   const item={name:p.name,from:source?.name??'Libre',to:own.name,fee,season:world.season,event:world.eventIndex};world.transferLog.unshift(item);world.transferLog=world.transferLog.slice(0,80);
   addFinance(world,`Fichaje: ${p.name}`,-fee);news(world,`${p.name} ya es de ${own.name}`,`Contrato de cuatro temporadas. Refuerzo para ${p.position}.`,'transfer');unlockAchievements(world);return p;
 }
