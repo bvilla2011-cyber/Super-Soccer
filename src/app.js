@@ -1,4 +1,4 @@
-import { createTeams, COUNTRIES, teamById, overall, teamRating, playerValue, wage, activePlayers, badgeSVG } from './data.js';
+import { createTeams, COUNTRIES, teamById, overall, teamRating, playerValue, teamMarketValue, wage, activePlayers, badgeSVG } from './data.js';
 import { createCareer, advance, nextFixture, nextSeason, buyPlayer, sellPlayer, renewPlayer, upgrade, promoteYouth, transferPrice, changeClub, unlockAchievements } from './career.js';
 import { listSlots, loadSlot, saveSlot, deleteSlot, exportSave, importSave, getSettings, setSettings } from './storage.js';
 import { submitOffer, advanceDay, signOffer, counterOffer } from './negotiations.js';
@@ -66,7 +66,7 @@ function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{save()
 async function load(id,backup=false){
   if(busy)return;
   const payload=await loadSlot(id,{backup});if(!payload){toast('Esta ranura está vacía.');return;}
-  stopMatch();world=payload.world;pendingMatch=payload.match;slot=id;view='home';competition=null;calendarEvent=null;status(payload.recovered?'Copia anterior recuperada':'✓ Guardado en este PC');closeModal(true);render();if(payload.recovered)toast('Se ha recuperado la copia anterior de la carrera.');if(pendingMatch)toast('Hay una simulación en curso. Pulsa Reanudar simulación para continuar.');
+  stopMatch();world=payload.world;pendingMatch=payload.match;slot=id;view='home';competition=null;calendarEvent=null;status(payload.recovered?'Copia anterior recuperada':'✓ Guardado en este PC');closeModal(true);if(payload.economyMigrated)await save();render();if(payload.recovered)toast('Se ha recuperado la copia anterior de la carrera.');if(payload.economyMigrated)toast('Presupuestos actualizados a la nueva economía del mercado.');if(pendingMatch)toast('Hay una simulación en curso. Pulsa Reanudar simulación para continuar.');
 }
 function findPlayer(id,w=world){const team=w?.teams.find(t=>t.roster.some(p=>p.id===id));return {p:team?.roster.find(p=>p.id===id)??w?.freeAgents.find(p=>p.id===id),team};}
 function showPlayer(id){const w=matchContext?.friendly?matchContext.world:world;const {p,team}=findPlayer(id,w);if(p){let html=UI.playerCard(w,p,team);if(game)html=html.replace(/<div class="modal-actions">[\s\S]*?<\/div><\/div>$/,'</div>');modal('INFORME DEL JUGADOR',html,{wide:true});}}
@@ -172,9 +172,9 @@ function applySwap(input){
 }
 function offer(id,type='transfer',suggested=null){
   const {p,team}=findPlayer(id);if(!p)return;
-  const own=teamById(world,world.userTeam),fee=transferPrice(p,team,own),asking=type==='loan'?Math.max(10000,Math.round(fee*.12/10000)*10000):fee;
+  const own=teamById(world,world.userTeam),marketValue=playerValue(p,team??own),fee=transferPrice(p,team,own),asking=type==='loan'?Math.max(10000,Math.round(fee*.12/10000)*10000):fee;
   const recommendations=world.teams.filter(t=>t.id!==own.id).flatMap(t=>t.roster.map(q=>({p:q,team:t}))).filter(x=>x.p.id!==id&&!x.p.loan&&x.p.position===p.position&&transferPrice(x.p,x.team,own)<=own.budget).sort((a,b)=>Math.abs(transferPrice(a.p,a.team,own)-fee)-Math.abs(transferPrice(b.p,b.team,own)-fee)).slice(0,3);
-  modal('NEGOCIACIÓN',`<h2>${e(p.name)} · ${type==='loan'?'CESIÓN':'TRASPASO'}</h2><p>Valor solicitado: <b>${money(asking)}</b> · Presupuesto: <b>${money(own.budget)}</b></p><label class="offer-input">TU OFERTA EN EUROS<input id="offer-amount" type="number" min="0" max="${own.budget}" step="10000" value="${suggested??asking}"></label><div class="modal-actions">${UI.button('ENVIAR OFERTA',`send-${type}-${id}`,'btn primary')}${team&&type==='transfer'?UI.button('PEDIR CESIÓN',`loan-${id}`,'btn secondary'):''}</div><h3>RECOMENDADOS PARA TU PRESUPUESTO</h3><div class="club-offers">${recommendations.map(x=>UI.button(`${UI.rating(overall(x.p))}<span>${e(x.p.name)}<small>${e(x.team.short)} · ${money(transferPrice(x.p,x.team,own))}</small></span> ↗`,`offer-${x.p.id}`,'club-offer')).join('')||'<p>No hay alternativas asequibles para esta posición.</p>'}</div>`,{wide:true});
+  modal('NEGOCIACIÓN',`<h2>${e(p.name)} · ${type==='loan'?'CESIÓN':'TRASPASO'}</h2><p>Valor de mercado estimado: <b>${money(marketValue)}</b> · ${type==='loan'?'Prima de cesión sugerida':'Oferta inicial sugerida'}: <b>${money(asking)}</b> · Presupuesto: <b>${money(own.budget)}</b></p><label class="offer-input">TU OFERTA EN EUROS<input id="offer-amount" type="number" min="0" max="${own.budget}" step="10000" value="${suggested??asking}"></label><div class="modal-actions">${UI.button('ENVIAR OFERTA',`send-${type}-${id}`,'btn primary')}${team&&type==='transfer'?UI.button('PEDIR CESIÓN',`loan-${id}`,'btn secondary'):''}</div><h3>RECOMENDADOS PARA TU PRESUPUESTO</h3><div class="club-offers">${recommendations.map(x=>UI.button(`${UI.rating(overall(x.p))}<span>${e(x.p.name)}<small>${e(x.team.short)} · valor ${money(playerValue(x.p,x.team))} · oferta ${money(transferPrice(x.p,x.team,own))}</small></span> ↗`,`offer-${x.p.id}`,'club-offer')).join('')||'<p>No hay alternativas asequibles para esta posición.</p>'}</div>`,{wide:true});
 }
 function inbox(){
   const offers=world.offers??[];for(const o of offers)o.unread=false;
@@ -231,7 +231,7 @@ async function action(a){
   if(a.startsWith('store-')){await save({target:Number(a.slice(6)),notify:true});closeModal(true);render();return;}
   if(a.startsWith('import-to-')){const id=Number(a.slice(10));world=imported.world;pendingMatch=imported.match;slot=id;view='home';closeModal(true);await save();render();imported=null;toast('Carrera importada y guardada.');return;}
   if(a.startsWith('player-')){showPlayer(a.slice(7));return;}
-  if(a.startsWith('team-')){const t=teamById(world,a.slice(5));modal('INFORME DEL CLUB',`<div class="team-profile">${badgeSVG(t,80)}<h2>${e(t.name)}</h2><p>${e(COUNTRIES.find(c=>c.id===t.country).name)} · División ${t.division}</p>${UI.miniPitch(t)}<div class="team-roster-list">${t.roster.map(p=>UI.button(`${UI.rating(overall(p))}<span>${e(p.name)}<small>${p.position} · ${p.age} años · Potencial ${p.potential}</small></span>`,`player-${p.id}`,'lineup-option')).join('')}</div></div>`,{wide:true});return;}
+  if(a.startsWith('team-')){const t=teamById(world,a.slice(5));modal('INFORME DEL CLUB',`<div class="team-profile">${badgeSVG(t,80)}<h2>${e(t.name)}</h2><p>${e(COUNTRIES.find(c=>c.id===t.country).name)} · División ${t.division}</p><p>Valor de plantilla estimado: <b>${money(teamMarketValue(t))}</b> · Presupuesto: <b>${money(t.budget)}</b></p>${UI.miniPitch(t)}<div class="team-roster-list">${t.roster.map(p=>UI.button(`${UI.rating(overall(p))}<span>${e(p.name)}<small>${p.position} · ${p.age} años · Potencial ${p.potential} · ${money(playerValue(p,t))}</small></span>`,`player-${p.id}`,'lineup-option')).join('')}</div></div>`,{wide:true});return;}
   if(a.startsWith('lineup-')){chooseLineup(a.slice(7));return;}
   if(a.startsWith('swap-')){applySwap(a.slice(5));return;}
   if(a.startsWith('offer-')){offer(a.slice(6));return;}
@@ -247,9 +247,9 @@ async function action(a){
     modal('¡FICHAJE CONFIRMADO!',`<div class="signing-show">${UI.portrait(p,teamById(world,world.userTeam))}<h2>¡BIENVENIDO, ${e(p.name)}!</h2><p>Ya forma parte de tu plantilla.</p>${UI.button('CONTINUAR','close-modal','btn primary')}</div>`);return;
   }
   if(a.startsWith('buy-')){const p=buyPlayer(world,a.slice(4));closeModal(true);scheduleSave();render();toast(`${p.name} se incorpora al equipo.`);return;}
-  if(a.startsWith('sell-')&&!a.startsWith('sell-confirm-')){const {p}=findPlayer(a.slice(5));confirm(`Vender a ${p.name}`,`La mejor oferta de venta es ${money(Math.round(playerValue(p)*.82/10000)*10000)}. El jugador saldrá de tu plantilla y un club con presupuesto cubrirá el traspaso.`,'Aceptar oferta',`sell-confirm-${p.id}`);return;}
+  if(a.startsWith('sell-')&&!a.startsWith('sell-confirm-')){const {p,team}=findPlayer(a.slice(5));confirm(`Vender a ${p.name}`,`La mejor oferta de venta es ${money(Math.round(playerValue(p,team)*.82/10000)*10000)}. El jugador saldrá de tu plantilla y un club con presupuesto cubrirá el traspaso.`,'Aceptar oferta',`sell-confirm-${p.id}`);return;}
   if(a.startsWith('sell-confirm-')){const fee=sellPlayer(world,a.slice(13));closeModal(true);scheduleSave();render();toast(`Venta completada por ${money(fee)}.`);return;}
-  if(a.startsWith('renew-')&&!a.startsWith('renew-confirm-')){const {p}=findPlayer(a.slice(6));confirm(`Renovar a ${p.name}`,`La prima de renovación cuesta ${money(wage(p)*12)}. Su contrato se ampliará dos temporadas, hasta un máximo de cinco.`,'Renovar contrato',`renew-confirm-${p.id}`);return;}
+  if(a.startsWith('renew-')&&!a.startsWith('renew-confirm-')){const {p,team}=findPlayer(a.slice(6));confirm(`Renovar a ${p.name}`,`La prima de renovación cuesta ${money(wage(p,team)*12)}. Su contrato se ampliará dos temporadas, hasta un máximo de cinco.`,'Renovar contrato',`renew-confirm-${p.id}`);return;}
   if(a.startsWith('renew-confirm-')){renewPlayer(world,a.slice(14));closeModal(true);scheduleSave();render();toast('Contrato renovado.');return;}
   if(a.startsWith('upgrade-')){const kind=a.slice(8),t=teamById(world,world.userTeam);confirm('Mejorar instalaciones',`La inversión cuesta ${money(t[kind]**2*1000000)} y aumenta un nivel la instalación.`,'Invertir',`invest-${kind}`);return;}
   if(a.startsWith('invest-')){upgrade(world,a.slice(7));closeModal(true);scheduleSave();render();toast('Instalación mejorada.');return;}

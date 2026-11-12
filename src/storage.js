@@ -1,5 +1,5 @@
 import { hash, clone } from './utils.js';
-import { SAVE_VERSION } from './career.js';
+import { SAVE_VERSION, rebaseCareerEconomy } from './career.js';
 
 const MAGIC='SUPER-SOCCER';
 const MAX_FILE=24*1024*1024;
@@ -144,9 +144,10 @@ export function saveSlot(id,world,match=null) {
 export async function loadSlot(id,{backup=false}={}) {
   await saveQueue.catch(()=>{});
   const record=await readRecord(id);if(!record)return null;
-  if(backup) {if(!record.backup)throw new Error('Esta ranura todavía no tiene una copia anterior.');return {...unpack(record.backup),recovered:true};}
-  try {return {...unpack(record.current),recovered:false};}
-  catch(error){if(record.backup)return {...unpack(record.backup),recovered:true};throw error;}
+  const restore=envelope=>{const payload=unpack(envelope);payload.economyMigrated=rebaseCareerEconomy(payload.world);return payload;};
+  if(backup) {if(!record.backup)throw new Error('Esta ranura todavía no tiene una copia anterior.');return {...restore(record.backup),recovered:true};}
+  try {return {...restore(record.current),recovered:false};}
+  catch(error){if(record.backup)return {...restore(record.backup),recovered:true};throw error;}
 }
 export async function listSlots() {
   return Promise.all([1,2,3].map(async id=>{try {const record=await readRecord(id);return {id,...record?.metadata,exists:!!record,hasBackup:!!record?.backup};}catch(e){return {id,exists:true,broken:true};}}));
@@ -159,7 +160,7 @@ export async function deleteSlot(id) {
 export function exportSave(world,match=null) {return JSON.stringify(makeEnvelope(world,match));}
 export function importSave(text) {
   if(typeof text!=='string'||text.length>MAX_FILE)throw new Error('El archivo supera el límite de 24 MB.');
-  try{return unpack(JSON.parse(text));}catch(error){if(error instanceof SyntaxError)throw new Error('El archivo no contiene una partida JSON válida.');throw error;}
+  try{const payload=unpack(JSON.parse(text));payload.economyMigrated=rebaseCareerEconomy(payload.world);return payload;}catch(error){if(error instanceof SyntaxError)throw new Error('El archivo no contiene una partida JSON válida.');throw error;}
 }
 export function getSettings() {
   const defaults={sound:true,music:false,volume:.45,duration:180,offside:false,quality:'high',reducedMotion:false,autoSwitch:true};

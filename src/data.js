@@ -45,8 +45,30 @@ export function overall(player) {
   const weights = {POR:[.08,.01,.09,.1,.06,.06,.6],DEF:[.16,.06,.16,.36,.1,.14,.02],MED:[.13,.14,.29,.12,.2,.11,.01],DEL:[.22,.34,.13,.04,.19,.07,.01]}[player.position];
   return Math.round(Object.keys(ATTRIBUTE_NAMES).reduce((sum,key,i)=>sum+a[key]*weights[i],0));
 }
-export const playerValue = p => Math.round((Math.max(15, overall(p) - 40) ** 3 * 240) * (p.age < 23 ? 1.45 : p.age > 30 ? .62 : 1) * (1 + Math.max(0,p.potential-overall(p)) / 22) / 10000) * 10000;
-export const wage = p => Math.round(playerValue(p) / 4800 / 100) * 100 + 200;
+export const MARKET_REFERENCE_AVERAGES = {
+  en:[21_350_000,3_470_000,565_000], es:[10_370_000,1_030_000,187_000],
+  de:[9_010_000,1_210_000,237_000], it:[8_450_000,830_000,203_000],
+  fr:[8_830_000,1_100_000,145_000], pt:[3_980_000,434_000,37_000],
+  nl:[2_860_000,299_000,4_000]
+};
+const REFERENCE_MODEL_AVERAGES={1:15_000_000,2:1_250_000,3:380_000};
+export const ECONOMY_VERSION=2;
+export function playerValue(p,team=null) {
+  const value=overall(p),ageFactor=p.age<23?1.45:p.age>30?.62:1;
+  const potentialFactor=1+Math.max(0,p.potential-value)/22;
+  const marketAverage=MARKET_REFERENCE_AVERAGES[team?.country]?.[team?.division-1];
+  const context=marketAverage?Math.sqrt(marketAverage/REFERENCE_MODEL_AVERAGES[team.division]):1;
+  const estimate=100_000*(1.195**(value-50))*ageFactor*potentialFactor*context;
+  return Math.round(clamp(estimate,10_000,200_000_000)/10_000)*10_000;
+}
+export function teamMarketValue(team) {
+  return team.roster.reduce((sum,p)=>sum+playerValue(p,team),0);
+}
+export function initialTransferBudget(team) {
+  const limits={1:[5_000_000,180_000_000],2:[500_000,35_000_000],3:[100_000,8_000_000]}[team.division]??[100_000,8_000_000];
+  return Math.round(clamp(teamMarketValue(team)*.12,...limits)/100_000)*100_000;
+}
+export const wage = (p,team=null) => Math.round(playerValue(p,team) / 4800 / 100) * 100 + 200;
 export const emptyStats = () => ({matches:0,minutes:0,goals:0,assists:0,shots:0,saves:0,yellow:0,red:0,rating:0});
 export function makePlayer(rng, id, rating, position, star = null) {
   const age = star ? (/Yamir|Dué|Yildan/.test(star[0]) ? 19 : /Levandos|Salá|Grizán/.test(star[0]) ? 33 : rng.int(23,28)) : rng.int(18,33);
@@ -69,14 +91,14 @@ export function createTeams(seedNumber) {
     const all = [...c.clubs, ...reserveNames.map((name,i)=>seed(name, 64+i%5, ['#5380b0','#b74a55','#479273','#c8ac48'][i%4])),...third.map((name,i)=>seed(name,58+i%5,['#814bac','#df743e','#4388ba','#379673'][i%4]))];
     all.forEach((t,i)=>{
       const id = `${c.id}-${i+1}`;
-      const team = {id,name:t.name,short:t.name.split(' ').slice(0,2).join(' '),code:t.name.replace(/[^a-zA-Z]/g,'').slice(0,3).toUpperCase(),country:c.id,division:i<c.clubs.length?1:i<c.clubs.length+reserveNames.length?2:3,colors:t.colors,stadium:`Estadio ${t.name.split(' ')[0]}`,capacity:12000+(t.rating-60)*1800,budget:Math.round((t.rating-50)**3*3500),formation:'2-1-1',tactic:'balanced',academy:1,trainingLevel:1,roster:[],lineup:[],honours:[],form:[]};
+      const team = {id,name:t.name,short:t.name.split(' ').slice(0,2).join(' '),code:t.name.replace(/[^a-zA-Z]/g,'').slice(0,3).toUpperCase(),country:c.id,division:i<c.clubs.length?1:i<c.clubs.length+reserveNames.length?2:3,colors:t.colors,stadium:`Estadio ${t.name.split(' ')[0]}`,capacity:12000+(t.rating-60)*1800,budget:0,formation:'2-1-1',tactic:'balanced',academy:1,trainingLevel:1,roster:[],lineup:[],honours:[],form:[]};
       const roles = ['POR','DEF','DEF','MED','DEL','POR','DEF','MED','MED','DEL','DEL','DEF'];
       roles.forEach((position,j)=>{
         const star = t.stars.find(s=>s[1]===position && !team.roster.some(p=>p.name===s[0]));
         const p = makePlayer(rng,`${id}-p${j}`,star?.[2] ?? t.rating-rng.int(0,j<5?6:12),position,star);
         p.number = [1,4,5,8,9,13,3,6,10,11,7,2][j]; team.roster.push(p);
       });
-      team.lineup = team.roster.slice(0,5).map(p=>p.id); teams.push(team);
+      team.lineup = team.roster.slice(0,5).map(p=>p.id);team.budget=initialTransferBudget(team);teams.push(team);
     });
   }
   return { teams, rngState:rng.state() };
