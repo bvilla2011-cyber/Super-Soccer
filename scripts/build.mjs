@@ -2,7 +2,7 @@ import {mkdir,readdir,readFile,writeFile,copyFile,rm} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..');
-const sources=['index.html','styles.css','manifest.webmanifest'];
+const sources=['index.html','styles.css','arcade.css','manifest.webmanifest'];
 async function walk(dir){for(const file of await readdir(path.join(root,dir),{withFileTypes:true})){const p=path.posix.join(dir,file.name);if(file.isDirectory())await walk(p);else sources.push(p);}}
 await walk('src');await walk('assets');
 const hash=createHash('sha256');for(const file of sources.sort())hash.update(await readFile(path.join(root,file)));

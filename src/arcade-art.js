@@ -1,5 +1,6 @@
 // Original, local SVG art. Every navigation icon and portrait shares the same ink outline.
 const paths={
+ mail:'<rect x="6" y="13" width="52" height="39" rx="5"/><path d="m8 17 24 19 24-19M8 48l17-15m31 15L39 33"/>',
  ball:'<circle cx="32" cy="32" r="23"/><path d="m32 20 11 8-4 13H25l-4-13zm0-11v11M10 25l11 3m-5 22 9-9m23 9-9-9m15-16-11 3"/>',
  home:'<path d="M8 29 32 8l24 21-5 5-5-4v24H18V30l-5 4z"/><path d="M27 54V38h11v16M28 24h9"/>',
  squad:'<path d="m18 13 10-5h8l10 5 12 14-11 8-5-5v26H22V30l-5 5-11-8z"/><path d="M26 10q6 12 12 0M28 26h9l-7 17"/>',

@@ -17,7 +17,9 @@ function openDB() {
 }
 async function readRecord(id) {
   try {
-    const db=await openDB();return await new Promise((resolve,reject)=>{const req=db.transaction('saves').objectStore('saves').get(id);req.onsuccess=()=>resolve(req.result??null);req.onerror=()=>reject(req.error);});
+    const db=await openDB();const record=await new Promise((resolve,reject)=>{const req=db.transaction('saves').objectStore('saves').get(id);req.onsuccess=()=>resolve(req.result??null);req.onerror=()=>reject(req.error);});
+    let fallback=null;try{const raw=globalThis.localStorage?.getItem(`super-soccer-save-${id}`);fallback=raw?JSON.parse(raw):null;}catch(error){}
+    return (fallback?.current?.date??0)>(record?.current?.date??0)?fallback:record;
   } catch(error) {
     const raw=globalThis.localStorage?.getItem(`super-soccer-save-${id}`);return raw?JSON.parse(raw):null;
   }
@@ -29,9 +31,14 @@ async function writeRecord(record) {
     try { localStorage.setItem(`super-soccer-save-${record.id}`,JSON.stringify(record));return 'localStorage'; }
     catch(e){throw new Error('No queda espacio de guardado. Exporta la carrera y libera una ranura.');}
   }
-  await new Promise((resolve,reject)=>{
-    const tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(record);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
-  });return 'IndexedDB';
+  try {
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(record);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+    });return 'IndexedDB';
+  } catch(error) {
+    try {if(!globalThis.localStorage)throw error;localStorage.setItem(`super-soccer-save-${record.id}`,JSON.stringify(record));return 'localStorage';}
+    catch(e){throw new Error('No se ha podido guardar. Exporta tu carrera y comprueba el espacio disponible.');}
+  }
 }
 const assert=(condition,message)=>{if(!condition)throw new Error(`Partida incompatible o dañada: ${message}`);};
 const integer=(n,min,max)=>Number.isInteger(n)&&n>=min&&n<=max;
@@ -39,7 +46,7 @@ const finite=(n,min,max)=>Number.isFinite(n)&&n>=min&&n<=max;
 export function validatePayload(payload) {
   const w=payload?.world;
   assert(w&&w.version===SAVE_VERSION,'versión no reconocida.');
-  assert(Array.isArray(w.teams)&&w.teams.length>=8&&w.teams.length<=250,'lista de clubes.');
+  assert(Array.isArray(w.teams)&&w.teams.length>=8&&w.teams.length<=350,'lista de clubes.');
   assert(typeof w.manager==='string'&&w.manager.length<=64,'entrenador.');
   assert(['career','league','cup'].includes(w.mode),'modo de juego.');
   assert(['rookie','club','legend'].includes(w.difficulty),'dificultad.');
@@ -49,7 +56,7 @@ export function validatePayload(payload) {
     assert(typeof t.id==='string'&&/^[a-z0-9-]{1,100}$/i.test(t.id)&&!teams.has(t.id),'identificador de club.');teams.add(t.id);
     assert(typeof t.name==='string'&&t.name.length<100&&typeof t.code==='string'&&/^[a-z0-9]{1,8}$/i.test(t.code),'nombre de club.');
     assert(Array.isArray(t.colors)&&t.colors.length===2&&t.colors.every(c=>/^#[0-9a-f]{6}$/i.test(c)),'colores del club.');
-    assert(finite(t.budget,-1e10,1e12)&&integer(t.division,1,2),'economía o división.');
+    assert(finite(t.budget,-1e10,1e12)&&integer(t.division,1,3),'economía o división.');
     assert(Array.isArray(t.roster)&&t.roster.length>=1&&t.roster.length<=30,'plantilla.');
     assert(Array.isArray(t.lineup)&&t.lineup.length<=5&&new Set(t.lineup).size===t.lineup.length,'alineación.');
     assert(['2-1-1','1-2-1','1-1-2','4-4-2','3-5-2'].includes(t.formation)&&['balanced','attacking','defensive'].includes(t.tactic),'táctica.');
@@ -110,13 +117,15 @@ export function unpack(envelope) {
 }
 let saveQueue=Promise.resolve();
 export function saveSlot(id,world,match=null) {
+  validatePayload({world,match});
   const envelope=makeEnvelope(world,match);
+  const savedWorld=JSON.parse(envelope.data).world;
   const task=saveQueue.catch(()=>{}).then(async()=>{
     const record=await readRecord(id);
     let previous=null;
     try {if(record?.current){unpack(record.current);previous=record.current;}}catch(e){previous=record?.backup??null;}
-    const team=world.teams.find(t=>t.id===world.userTeam);
-    const metadata={manager:world.manager,club:team.name,teamId:team.id,colors:team.colors,code:team.code,season:world.season,event:world.eventIndex,total:world.events.length,mode:world.mode,date:envelope.date,match:!!match};
+    const team=savedWorld.teams.find(t=>t.id===savedWorld.userTeam);
+    const metadata={manager:savedWorld.manager,club:team.name,teamId:team.id,colors:team.colors,code:team.code,season:savedWorld.season,event:savedWorld.eventIndex,total:savedWorld.events.length,mode:savedWorld.mode,date:envelope.date,match:!!match};
     await writeRecord({id,current:envelope,backup:previous,metadata});return metadata;
   });saveQueue=task;return task;
 }

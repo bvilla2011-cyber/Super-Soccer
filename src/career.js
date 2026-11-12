@@ -12,7 +12,7 @@ export function news(world,title,body='',type='club') {
 export function createCareer({teamId='es-2',manager='Míster',difficulty='club',seed=Date.now(),mode='career'}={}) {
   const created=createTeams(seed);
   if(!created.teams.some(t=>t.id===teamId)) throw new Error('Club desconocido.');
-  const world={version:SAVE_VERSION,seed:seed>>>0,rngState:created.rngState,season:2026,userTeam:teamId,manager:String(manager).slice(0,32)||'Míster',difficulty,mode,teams:created.teams,freeAgents:[],fixtures:[],competitions:[],events:[],eventIndex:0,seasonComplete:false,news:[],history:[],finance:[],transferLog:[],trophies:[],reputation:20,managerStats:{matches:0,wins:0,draws:0,losses:0,goals:0,against:0,simulated:0,played:0},trainingFocus:'balanced',created:Date.now(),updated:Date.now(),achievements:[],nextPlayerId:1};
+  const world={version:SAVE_VERSION,seed:seed>>>0,rngState:created.rngState,season:2026,userTeam:teamId,manager:String(manager).slice(0,32)||'Míster',difficulty,mode,teams:created.teams,freeAgents:[],fixtures:[],competitions:[],events:[],eventIndex:0,day:0,weekDay:0,offers:[],seasonComplete:false,news:[],history:[],finance:[],transferLog:[],trophies:[],reputation:20,managerStats:{matches:0,wins:0,draws:0,losses:0,goals:0,against:0,simulated:0,played:0},trainingFocus:'balanced',created:Date.now(),updated:Date.now(),achievements:[],nextPlayerId:1};
   withRandom(world,rng=>{for(let i=0;i<30;i++)world.freeAgents.push(makePlayer(rng,`free-${world.nextPlayerId++}`,rng.int(58,82),rng.pick(['POR','DEF','MED','DEL'])));});
   setupSeason(world);
   news(world,`Empieza tu historia en ${teamById(world,teamId).name}`,`La directiva confía en ${world.manager}. Prepara el cinco titular, planifica los fichajes y dirige al equipo desde el banquillo.`);
@@ -30,12 +30,13 @@ export function setupSeason(world) {
   if(world.mode!=='career') { setupPractice(world);return; }
   const superEvent={id:'super',kind:'super',label:'Supercopas · Apertura',round:0};world.events.push(superEvent);
   for(const c of COUNTRIES) {
-    for(const div of [1,2]) {
+    for(const div of [1,2,3]) {
       const ids=world.teams.filter(t=>t.country===c.id&&t.division===div).map(t=>t.id);
-      const comp={id:`${c.id}-${div}`,name:div===1?c.league:c.second,kind:'league',country:c.id,division:div,teamIds:ids};world.competitions.push(comp);
+      if(ids.length<2)continue;
+      const comp={id:`${c.id}-${div}`,name:div===1?c.league:div===2?c.second:`${c.second} · Tercera`,kind:'league',country:c.id,division:div,teamIds:ids};world.competitions.push(comp);
       roundRobin(ids).forEach((games,r)=>games.forEach(([a,b])=>fixture(world,comp,{id:`league-${r}`},r,a,b)));
     }
-    const cup={id:`${c.id}-cup`,name:c.cup,kind:'cup',country:c.id,teamIds:world.teams.filter(t=>t.country===c.id).map(t=>t.id),rounds:5,prepared:[]};world.competitions.push(cup);
+    const cup={id:`${c.id}-cup`,name:c.cup,kind:'cup',country:c.id,teamIds:world.teams.filter(t=>t.country===c.id&&t.division<=2).map(t=>t.id),rounds:5,prepared:[]};world.competitions.push(cup);
     const history=world.history.at(-1); const ranking=history?.tables?.[`${c.id}-1`]?.map(r=>r.id)??world.teams.filter(t=>t.country===c.id&&t.division===1).sort((a,b)=>teamRating(b)-teamRating(a)).map(t=>t.id);
     const formerCup=history?.winners?.[`${c.id}-cup`];
     const opponent=formerCup&&formerCup!==ranking[0]?formerCup:ranking[1];
@@ -164,7 +165,7 @@ export function advance(world,manualResult=null) {
     }
     if(world.eventIndex%7===6)aiTransfers(world,rng);
   });
-  world.eventIndex++;world.updated=Date.now();
+  world.eventIndex++;world.weekDay=0;world.day=(world.day??0)+1;world.updated=Date.now();
   if(own) {
     const home=teamById(world,own.home),away=teamById(world,own.away);
     news(world,`${home.short} ${own.score[0]} – ${own.score[1]} ${away.short}`,`${world.competitions.find(c=>c.id===own.competition).name}${own.pens?` · Penaltis ${own.pens.join('–')}`:''}`,'result');
@@ -194,7 +195,7 @@ function aiTransfers(world,rng) {
   for(let i=0;i<5;i++) {
     const target=rng.pick(world.teams.filter(t=>t.id!==world.userTeam&&t.roster.length<16));if(!target)continue;
     const source=rng.pick(world.teams.filter(t=>t.id!==world.userTeam&&t.id!==target.id&&t.roster.length>9));if(!source)continue;
-    const p=rng.pick(source.roster.filter(p=>!source.lineup.includes(p.id)&&p.position!=='POR'));
+    const p=rng.pick(source.roster.filter(p=>!p.loan&&!source.lineup.includes(p.id)&&p.position!=='POR'));
     if(!p)continue;const fee=transferPrice(p,source,target);
     if(target.budget<fee||overall(p)<teamRating(target)-7)continue;
     source.roster=source.roster.filter(x=>x!==p);target.roster.push(p);target.budget-=fee;source.budget+=fee;p.number=freeNumber(target);p.contract=3;
@@ -207,17 +208,19 @@ export function transferPrice(p,source,target) {
   return Math.round(playerValue(p)*(source.lineup.includes(p.id)?1.15:1)*(p.contract<=1?.83:1)*(target&&source.country!==target.country?1.03:1)/10000)*10000;
 }
 const freeNumber=t=>{for(let n=2;n<100;n++)if(!t.roster.some(p=>p.number===n))return n;return 99;};
-export function buyPlayer(world,playerId) {
+export function buyPlayer(world,playerId,agreedFee=null,loan=false) {
   if(!transferOpen(world))throw new Error('El mercado está cerrado. Abre al inicio y a mitad de temporada.');
   const own=teamById(world,world.userTeam);if(own.roster.length>=20)throw new Error('La plantilla admite 20 jugadores. Vende o cede una plaza.');
   const source=world.teams.find(t=>t.id!==own.id&&t.roster.some(p=>p.id===playerId));
   const p=source?.roster.find(p=>p.id===playerId)??world.freeAgents.find(p=>p.id===playerId);
   if(!p)throw new Error('El jugador ya no está disponible.');
+  if(p.loan)throw new Error('Este jugador ya está cedido.');
+  if(loan&&!source)throw new Error('Los agentes libres no pueden llegar cedidos.');
   if(source&&(source.roster.length<=8||(p.position==='POR'&&source.roster.filter(x=>x.position==='POR').length<=1)))throw new Error('El club vendedor no acepta perder otro jugador en esa posición.');
-  const fee=transferPrice(p,source,own);if(own.budget<fee)throw new Error('Presupuesto insuficiente para este fichaje.');
+  const fee=agreedFee??transferPrice(p,source,own);if(!Number.isFinite(fee)||fee<0||own.budget<fee)throw new Error('Presupuesto insuficiente para este fichaje.');
   if(source){source.roster=source.roster.filter(x=>x!==p);source.lineup=source.lineup.filter(id=>id!==p.id);source.budget+=fee;}
   else world.freeAgents=world.freeAgents.filter(x=>x!==p);
-  own.budget-=fee;p.number=freeNumber(own);p.contract=4;p.morale=85;own.roster.push(p);
+  own.budget-=fee;p.number=freeNumber(own);if(loan)p.loan={sourceId:source.id,season:world.season};else p.contract=4;p.morale=85;own.roster.push(p);
   const item={name:p.name,from:source?.name??'Libre',to:own.name,fee,season:world.season,event:world.eventIndex};world.transferLog.unshift(item);world.transferLog=world.transferLog.slice(0,80);
   addFinance(world,`Fichaje: ${p.name}`,-fee);news(world,`${p.name} ya es de ${own.name}`,`Contrato de cuatro temporadas. Refuerzo para ${p.position}.`,'transfer');unlockAchievements(world);return p;
 }
@@ -225,6 +228,7 @@ export function sellPlayer(world,playerId) {
   if(!transferOpen(world))throw new Error('El mercado está cerrado.');
   const own=teamById(world,world.userTeam),p=own.roster.find(p=>p.id===playerId);
   if(!p)throw new Error('Jugador desconocido.');
+  if(p.loan)throw new Error('Un jugador cedido no se puede vender.');
   if(own.roster.length<=8)throw new Error('Necesitas al menos ocho jugadores.');
   if(p.position==='POR'&&own.roster.filter(x=>x.position==='POR').length<=1)throw new Error('Necesitas conservar un portero.');
   const fee=Math.round(playerValue(p)*.82/10000)*10000;
@@ -256,7 +260,7 @@ function finishSeason(world) {
       const table=standings(world,comp.id);tables[comp.id]=table;
       if(table[0])award(world,comp,table[0].id);
       // Every club receives a placement reward, including clubs in the second division.
-      table.forEach((row,i)=>{const prize=Math.round(300000+(table.length-i)*180000*(comp.division===2?.4:1));teamById(world,row.id).budget+=prize;if(row.id===world.userTeam)addFinance(world,'Premio por clasificación',prize);});
+      table.forEach((row,i)=>{const prize=Math.round(300000+(table.length-i)*180000*(comp.division===3?.2:comp.division===2?.4:1));teamById(world,row.id).budget+=prize;if(row.id===world.userTeam)addFinance(world,'Premio por clasificación',prize);});
     }
     if(comp.winner)winners[comp.id]=comp.winner;
   }
@@ -269,11 +273,19 @@ function finishSeason(world) {
 }
 export function nextSeason(world) {
   if(!world.seasonComplete)throw new Error('Todavía quedan partidos.');
+  for(const t of world.teams)for(const p of [...t.roster])if(p.loan&&p.loan.season<=world.season){
+    const source=teamById(world,p.loan.sourceId);
+    if(source){t.roster=t.roster.filter(x=>x!==p);t.lineup=t.lineup.filter(id=>id!==p.id);p.number=freeNumber(source);source.roster.push(p);}
+    delete p.loan;
+  }
+  world.weekDay=0;world.offers=[];
   const last=world.history.at(-1);
   if(world.mode==='career')for(const c of COUNTRIES) {
     const first=last.tables[`${c.id}-1`],second=last.tables[`${c.id}-2`];
     if(first&&second) {
       first.slice(-2).forEach(r=>teamById(world,r.id).division=2);second.slice(0,2).forEach(r=>teamById(world,r.id).division=1);
+      const third=last.tables[`${c.id}-3`];
+      if(third){second.slice(-2).forEach(r=>teamById(world,r.id).division=3);third.slice(0,2).forEach(r=>teamById(world,r.id).division=2);}
       if([...first.slice(-2),...second.slice(0,2)].some(r=>r.id===world.userTeam))news(world,teamById(world,world.userTeam).division===1?'¡Ascenso a Primera!':'Nueva etapa en la división de ascenso','El reto continúa.','season');
     }
   }

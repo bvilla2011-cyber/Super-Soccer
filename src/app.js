@@ -1,6 +1,7 @@
 import { createTeams, COUNTRIES, teamById, overall, teamRating, playerValue, wage, activePlayers, badgeSVG } from './data.js';
 import { createCareer, advance, nextFixture, nextSeason, buyPlayer, sellPlayer, renewPlayer, upgrade, promoteYouth, transferPrice, changeClub, unlockAchievements } from './career.js';
 import { listSlots, loadSlot, saveSlot, deleteSlot, exportSave, importSave, getSettings, setSettings } from './storage.js';
+import { submitOffer, advanceDay, signOffer, counterOffer } from './negotiations.js';
 import { MatchSimulation, matchSeed, STATE_LABELS } from './match.js';
 import { Renderer } from './render.js';
 import { Audio } from './audio.js';
@@ -22,7 +23,10 @@ function render(){
   if(view==='landing'&&!world){root.innerHTML=UI.landing(slots);return;}
   if(world) {
     if(view==='landing')view='home';
-    if(view==='home')content=UI.dashboard(world,!!pendingMatch);
+    if(view==='home'){
+      content=UI.dashboard(world,!!pendingMatch);
+      if(!pendingMatch&&!world.seasonComplete&&(world.weekDay??0)<6)content=content.replace('SIMULAR PARTIDO',`SIMULAR SEMANA · DÍA ${(world.weekDay??0)+1}/7`);
+    }
     if(view==='squad')content=UI.squad(world);
     if(view==='market')content=UI.market(world,filters);
     if(view==='competitions')content=UI.competitionView(world,competition,compTab);
@@ -33,6 +37,11 @@ function render(){
   if(view==='saves')content=UI.savesView(slots,world,slot);
   if(view==='settings')content=UI.settingsView(settings,world);
   root.innerHTML=world?UI.shell(world,view,content,saveStatus,slot):UI.bareShell(content);
+  if(world){
+    const top=root.querySelector('.topbar-right');
+    const unread=(world.offers??[]).some(o=>o.unread);
+    top?.insertAdjacentHTML('afterbegin',UI.button(`${UI.icon('mail')}${unread?'<i class="mail-dot"></i>':''}`,'inbox','icon-button mail-button','aria-label="Bandeja de fichajes" title="Bandeja de fichajes"'));
+  }
 }
 function navigate(next){if(game)return;view=next;if(!world&&!['landing','saves','settings'].includes(view))view='landing';render();window.scrollTo({top:0});}
 
@@ -130,7 +139,8 @@ async function finishMatch(result){
     else{
       const completed=advance(world,result);pendingMatch=null;
       // A completed simulation is committed exactly once before the next match opens.
-      await save();stopMatch();view='home';render();modal('EL PARTIDO HA TERMINADO',UI.report(world,completed)+`<div class="modal-actions">${UI.button('Volver al banquillo →','close-modal','btn primary')}</div>`,{wide:true});
+      try{await save();}catch(error){toast('La jornada se ha completado, pero no se ha podido guardar. Exporta una copia.',true);}
+      stopMatch();view='home';render();modal('EL PARTIDO HA TERMINADO',UI.report(world,completed)+`<div class="modal-actions">${UI.button('Volver al banquillo →','close-modal','btn primary')}</div>`,{wide:true});
     }
   }catch(error){toast(`No se pudo completar la jornada: ${error.message}`,true);}
   finally{busy=false;if(game)updateHUD();}
@@ -160,7 +170,32 @@ function applySwap(input){
   t.lineup=active.map(p=>p.id===outId?inId:p.id);closeModal(true);
   if(game?.state==='HalfTime')openHalfTime();else render();if(world)scheduleSave();
 }
-function offer(id){const {p,team}=findPlayer(id);if(!p)return;const own=teamById(world,world.userTeam),fee=transferPrice(p,team,own);confirm(`Fichar a ${p.name}`,`<strong>${e(team?.name??'Agente libre')}</strong> pide ${money(fee)}${team?' de traspaso':' de prima de fichaje'}.<br>Contrato: cuatro temporadas. Salario base: ${money(wage(p))} por partido.<br>Presupuesto después del fichaje: <strong>${money(own.budget-fee)}</strong>.`,'Confirmar fichaje',`buy-${id}`);}
+function offer(id,type='transfer',suggested=null){
+  const {p,team}=findPlayer(id);if(!p)return;
+  const own=teamById(world,world.userTeam),fee=transferPrice(p,team,own),asking=type==='loan'?Math.max(10000,Math.round(fee*.12/10000)*10000):fee;
+  const recommendations=world.teams.filter(t=>t.id!==own.id).flatMap(t=>t.roster.map(q=>({p:q,team:t}))).filter(x=>x.p.id!==id&&!x.p.loan&&x.p.position===p.position&&transferPrice(x.p,x.team,own)<=own.budget).sort((a,b)=>Math.abs(transferPrice(a.p,a.team,own)-fee)-Math.abs(transferPrice(b.p,b.team,own)-fee)).slice(0,3);
+  modal('NEGOCIACIÓN',`<h2>${e(p.name)} · ${type==='loan'?'CESIÓN':'TRASPASO'}</h2><p>Valor solicitado: <b>${money(asking)}</b> · Presupuesto: <b>${money(own.budget)}</b></p><label class="offer-input">TU OFERTA EN EUROS<input id="offer-amount" type="number" min="0" max="${own.budget}" step="10000" value="${suggested??asking}"></label><div class="modal-actions">${UI.button('ENVIAR OFERTA',`send-${type}-${id}`,'btn primary')}${team&&type==='transfer'?UI.button('PEDIR CESIÓN',`loan-${id}`,'btn secondary'):''}</div><h3>RECOMENDADOS PARA TU PRESUPUESTO</h3><div class="club-offers">${recommendations.map(x=>UI.button(`${UI.rating(overall(x.p))}<span>${e(x.p.name)}<small>${e(x.team.short)} · ${money(transferPrice(x.p,x.team,own))}</small></span> ↗`,`offer-${x.p.id}`,'club-offer')).join('')||'<p>No hay alternativas asequibles para esta posición.</p>'}</div>`,{wide:true});
+}
+function inbox(){
+  const offers=world.offers??[];for(const o of offers)o.unread=false;
+  closeModal(true);render();
+  modal('BANDEJA DE FICHAJES',offers.length?offers.map(o=>`<article class="mail-card"><div><b>${e(o.name)} · ${o.type==='loan'?'CESIÓN':'TRASPASO'}</b><p>${({pending:'Esperando respuesta',accepted:'¡Oferta aceptada! Firma para cerrar la operación.',rejected:'Oferta rechazada. Puedes volver a negociar.',signed:'Operación completada',unavailable:'Jugador ya no disponible'})[o.status]} · ${money(o.fee)}</p></div><div>${o.status==='accepted'?UI.button('FIRMAR',`sign-offer-${o.id}`,'btn primary compact'):o.status==='rejected'?UI.button(`CONTRAOFERTAR · ${money(o.counter)}`,`counter-${o.id}`,'btn secondary compact'):''}</div></article>`).join(''):'<p>No tienes mensajes de fichajes.</p>',{wide:true});
+  scheduleSave();
+}
+async function simulateWeek(){
+  if(busy)return;busy=true;
+  modal('AVANZANDO LA SEMANA',`<div class="matchday-animation"><div class="rolling-ball">⚽</div><h2 id="week-title">Preparando la semana…</h2><p>El calendario avanza hasta el partido o una respuesta importante.</p><div class="loading-line"></div></div>`,{closable:false});
+  try{
+    while((world.weekDay??0)<6){
+      await new Promise(resolve=>setTimeout(resolve,280));
+      advanceDay(world);
+      const label=document.getElementById('week-title');if(label)label.textContent=`DÍA ${world.weekDay+1} / 7`;
+      if((world.offers??[]).some(o=>o.unread))break;
+    }
+    await save();closeModal(true);render();
+    toast((world.offers??[]).some(o=>o.unread)?'Tienes una respuesta en el buzón.':'¡Día de partido!');
+  }finally{busy=false;}
+}
 function helpContent(){return `<h2>El fútbol se dirige desde el banquillo.</h2><div class="guide-list"><article><b>01</b><div><h3>Construye tu equipo</h3><p>Un portero y cuatro jugadores de campo disputan las retransmisiones. Alinea jugadores desde Plantilla y elige formación y táctica. Los atributos, la forma física y la moral influyen en el resultado.</p></div></article><article><b>02</b><div><h3>Sigue la simulación animada</h3><p>Los jugadores se mueven automáticamente. No hay control directo, tiros manuales ni resultados instantáneos. Ajusta la velocidad de la retransmisión, pausa cuando quieras y prepara cambios en el descanso.</p></div></article><article><b>03</b><div><h3>Piensa en varias temporadas</h3><p>Ficha, vende y renueva contratos. El potencial es un techo, no una promesa de crecimiento. Los jóvenes necesitan tiempo, minutos e instalaciones; los veteranos pierden atributos y se retiran. Los contratos expirados liberan al jugador al cerrar la temporada.</p></div></article><article><b>04</b><div><h3>Compite en Europa</h3><p>Siete países con dos divisiones, copas y supercopas. Las tres copas europeas tienen grupos y eliminatorias. Los dos últimos de Primera descienden y los dos primeros de Ascenso suben. La clasificación de la temporada decide las plazas europeas siguientes.</p></div></article><article><b>05</b><div><h3>Cuida tu carrera</h3><p>El juego guarda durante el partido y al terminar las jornadas. Hay tres ranuras con una copia anterior y archivos exportables. Instálalo desde tu navegador o usa el lanzador del repositorio para jugar sin conexión.</p></div></article></div><p class="hint">Super Soccer tiene diseño, código, arte y audio propios. Su universo de equipos y jugadores es ficticio; no representa una base de datos oficial ni reproduce todas las funciones de otro juego.</p>`;}
 function showOffers(){
   const eligible=world.teams.filter(t=>t.id!==world.userTeam).sort((a,b)=>teamRating(b)-teamRating(a));
@@ -177,7 +212,11 @@ async function action(a){
   if(a==='start-career'||a==='start-career-confirmed'){await startCareer(a.endsWith('confirmed'));return;}
   if(a.startsWith('setup-mode-')){setup.mode=a.slice(11);updateSetupModal();return;}
   if(a.startsWith('setup-team-')){setup.teamId=a.slice(11);if(setup.opponent===setup.teamId)setup.opponent=previewTeams.find(t=>t.id!==setup.teamId).id;updateSetupModal();return;}
-  if(a==='watch'){if(!world)return;const f=nextFixture(world);if(f)beginMatch(world,f);else await runMatchday();return;}
+  if(a==='watch'||a==='matchday'){
+    if(!world)return;
+    if(!pendingMatch&&(world.weekDay??0)<6){await simulateWeek();return;}
+    const f=nextFixture(world);if(f)beginMatch(world,f);else await runMatchday();return;
+  }
   if(a==='matchday'){await runMatchday();return;}
   if(a==='save'){await save({notify:true});if(view==='saves')render();return;}
   if(a==='export'){checkpoint();download(`Super-Soccer-${world.season}-ranura-${slot}.json`,exportSave(world,pendingMatch));toast('Copia de la carrera exportada.');return;}
@@ -196,6 +235,17 @@ async function action(a){
   if(a.startsWith('lineup-')){chooseLineup(a.slice(7));return;}
   if(a.startsWith('swap-')){applySwap(a.slice(5));return;}
   if(a.startsWith('offer-')){offer(a.slice(6));return;}
+  if(a==='inbox'){inbox();return;}
+  if(a.startsWith('loan-')){offer(a.slice(5),'loan');return;}
+  if(a.startsWith('send-transfer-')||a.startsWith('send-loan-')){
+    const loan=a.startsWith('send-loan-'),id=a.slice(loan?10:14),fee=Number(document.getElementById('offer-amount')?.value);
+    submitOffer(world,id,fee,loan?'loan':'transfer');closeModal(true);await save();render();toast('Oferta enviada. La respuesta llegará en dos días.');return;
+  }
+  if(a.startsWith('counter-')){const o=counterOffer(world,a.slice(8));offer(o.playerId,o.type,o.counter);return;}
+  if(a.startsWith('sign-offer-')){
+    const p=signOffer(world,a.slice(11));closeModal(true);await save();render();
+    modal('¡FICHAJE CONFIRMADO!',`<div class="signing-show">${UI.portrait(p,teamById(world,world.userTeam))}<h2>¡BIENVENIDO, ${e(p.name)}!</h2><p>Ya forma parte de tu plantilla.</p>${UI.button('CONTINUAR','close-modal','btn primary')}</div>`);return;
+  }
   if(a.startsWith('buy-')){const p=buyPlayer(world,a.slice(4));closeModal(true);scheduleSave();render();toast(`${p.name} se incorpora al equipo.`);return;}
   if(a.startsWith('sell-')&&!a.startsWith('sell-confirm-')){const {p}=findPlayer(a.slice(5));confirm(`Vender a ${p.name}`,`La mejor oferta de venta es ${money(Math.round(playerValue(p)*.82/10000)*10000)}. El jugador saldrá de tu plantilla y un club con presupuesto cubrirá el traspaso.`,'Aceptar oferta',`sell-confirm-${p.id}`);return;}
   if(a.startsWith('sell-confirm-')){const fee=sellPlayer(world,a.slice(13));closeModal(true);scheduleSave();render();toast(`Venta completada por ${money(fee)}.`);return;}
@@ -209,7 +259,7 @@ async function action(a){
   if(a==='calendar-own'||a==='calendar-all'){calendarAll=a.endsWith('all');render();return;}
   if(a.startsWith('report-')){const f=world.fixtures.find(f=>f.id===a.slice(7));if(f?.score)modal('RESUMEN DEL PARTIDO',UI.report(world,f),{wide:true});return;}
   if(a==='next-season'){confirm('Comenzar una nueva temporada','Se resolverán ascensos, descensos, retiradas y contratos expirados. Las estadísticas de temporada se reiniciarán; tu historial y palmarés se conservan.','Abrir la nueva temporada','roll-season');return;}
-  if(a==='roll-season'){nextSeason(world);pendingMatch=null;competition=null;calendarEvent=null;closeModal(true);await save();view='home';render();toast('Una nueva temporada empieza. El mercado está abierto.');return;}
+  if(a==='roll-season'){nextSeason(world);pendingMatch=null;competition=null;calendarEvent=null;closeModal(true);await save();view='home';render();modal('NUEVA TEMPORADA',`<div class="signing-show"><div class="season-star">★</div><h2>¡TEMPORADA ${UI.seasonLabel(world)}!</h2><p>Un nuevo camino hacia la gloria.</p>${UI.button('EMPEZAR','close-modal','btn primary')}</div>`);return;}
   if(a==='offers'){showOffers();return;}
   if(a.startsWith('change-club-')){const id=a.slice(12),t=teamById(world,id);confirm(`Dirigir a ${t.name}`,`Te incorporarás a ${e(t.name)} para preparar la próxima temporada. Tu historial personal se conserva.`,'Firmar contrato',`sign-club-${id}`);return;}
   if(a.startsWith('sign-club-')){changeClub(world,a.slice(10));closeModal(true);scheduleSave();render();return;}
@@ -219,7 +269,7 @@ async function action(a){
   if(a==='halftime'){openHalfTime();return;}
   if(a==='second-half'){const w=matchContext.world,t=teamById(w,w.userTeam);game.continueSecondHalf(t);closeModal(true);checkpoint();if(!matchContext.friendly)scheduleSave();updateHUD();return;}
   if(a==='exit-match'){await exitMatch();return;}
-  if(a==='fullscreen'){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.querySelector('.match-app')?.requestFullscreen();}catch(error){toast('Este navegador no permite la pantalla completa.');}return;}
+  if(a==='fullscreen'){try{if(document.fullscreenElement)await document.exitFullscreen();else await (document.querySelector('.match-app')??document.documentElement).requestFullscreen();}catch(error){toast('Este navegador no permite la pantalla completa.');}return;}
   if(a==='activate-update'){if(world)await save();registration?.waiting?.postMessage({type:'ACTIVATE'});return;}
 }
 

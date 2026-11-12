@@ -16,7 +16,7 @@ test('cup draws handle non-power-of-two fields without losing or repeating clubs
 test('a complete European season awards every trophy and records valid tables',()=>{
  const w=createCareer({seed:1234,teamId:'es-2'});const snapshots=JSON.stringify(w);
  while(!w.seasonComplete)advance(w);
- assert.equal(w.events.length,54);assert.equal(w.competitions.length,31);assert.equal(w.competitions.filter(c=>c.winner).length,31);assert.ok(w.fixtures.every(f=>f.score));
+ assert.equal(w.events.length,54);assert.equal(w.competitions.length,38);assert.equal(w.competitions.filter(c=>c.winner).length,38);assert.ok(w.fixtures.every(f=>f.score));
  for(const c of w.competitions.filter(c=>c.kind==='league')){const rows=standings(w,c.id);assert.ok(rows.every(r=>r.p===2*(c.teamIds.length-1)));assert.equal(rows.reduce((n,r)=>n+r.gf,0),rows.reduce((n,r)=>n+r.ga,0));assert.ok(rows.every(r=>r.pts===r.w*3+r.d));}
  validatePayload({world:w});assert.notEqual(JSON.stringify(w),snapshots);
  const previous=w.history.at(-1);nextSeason(w);assert.equal(w.season,2027);

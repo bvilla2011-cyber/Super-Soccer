@@ -45,6 +45,12 @@ export class Renderer {
     const sorted=[...game.players].filter(p=>!p.red).sort((a,b)=>a.y-b.y);
     for(const p of sorted)this.drawPlayer(ctx,p,game.teams[p.side].colors,game.elapsed);
     this.drawReferee(ctx,game);
+    if(!this.settings.reducedMotion&&game.state==='Action'&&game.activeAction){
+      const ball=game.ball,pulse=.6+.4*Math.sin(game.elapsed*14);
+      ctx.save();ctx.globalAlpha=.35*pulse;ctx.strokeStyle=['goal','save','wide','post'].includes(game.activeAction.event.type)?'#ffe25b':'#65eee6';ctx.lineWidth=4;
+      for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(ball.x,ball.y-ball.z-5,13+i*7+pulse*3,0,Math.PI*2);ctx.stroke();}
+      ctx.restore();
+    }
     this.drawBall(ctx,game.ball);
     this.drawGoals(ctx,game,true);
     for(const p of this.particles)if(p.life>0){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=130*dt;ctx.globalAlpha=clamp(p.life,0,1);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,5,3);ctx.globalAlpha=1;}
@@ -56,6 +62,7 @@ export class Renderer {
     ctx.save();ctx.translate(p.x,p.y);const moving=Math.hypot(p.vx,p.vy)>12,run=moving?Math.sin(time*13+p.index*1.7):Math.sin(time*2+p.index)*.1;const celebrate=p.celebrate>0;
     if(this.settings.quality!=='low'){ctx.fillStyle='#082b2d50';ctx.beginPath();ctx.ellipse(4,4,14,6,0,0,Math.PI*2);ctx.fill();}
     if(p.fall>0){ctx.rotate(Math.PI*.35);ctx.scale(1,.65);}
+    if(p.kick>0&&!this.settings.reducedMotion){ctx.strokeStyle='#fff598';ctx.globalAlpha=.8;ctx.lineWidth=3;for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(10,-7-i*5);ctx.lineTo(18+i*4,-10-i*6);ctx.stroke();}ctx.globalAlpha=1;}
     if(celebrate)ctx.translate(0,-Math.abs(Math.sin(time*7))*6);
     const skin=SKINS[p.skin%5],hair=HAIR[p.hair%6],shirt=p.keeper?'#f0bd56':colors[0],trim=p.keeper?'#193b38':colors[1];
     ctx.strokeStyle=skin;ctx.lineWidth=4;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-7,-18);ctx.lineTo(-12,celebrate?-31:-8+run*3);ctx.moveTo(7,-18);ctx.lineTo(12,celebrate?-31:-8-run*3);ctx.stroke();

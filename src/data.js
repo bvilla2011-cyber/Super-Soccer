@@ -45,8 +45,8 @@ export function overall(player) {
   const weights = {POR:[.08,.01,.09,.1,.06,.06,.6],DEF:[.16,.06,.16,.36,.1,.14,.02],MED:[.13,.14,.29,.12,.2,.11,.01],DEL:[.22,.34,.13,.04,.19,.07,.01]}[player.position];
   return Math.round(Object.keys(ATTRIBUTE_NAMES).reduce((sum,key,i)=>sum+a[key]*weights[i],0));
 }
-export const playerValue = p => Math.round((Math.max(15, overall(p) - 40) ** 3 * 60) * (p.age < 23 ? 1.45 : p.age > 30 ? .62 : 1) * (1 + Math.max(0,p.potential-overall(p)) / 22) / 10000) * 10000;
-export const wage = p => Math.round(playerValue(p) / 1200 / 100) * 100 + 200;
+export const playerValue = p => Math.round((Math.max(15, overall(p) - 40) ** 3 * 240) * (p.age < 23 ? 1.45 : p.age > 30 ? .62 : 1) * (1 + Math.max(0,p.potential-overall(p)) / 22) / 10000) * 10000;
+export const wage = p => Math.round(playerValue(p) / 4800 / 100) * 100 + 200;
 export const emptyStats = () => ({matches:0,minutes:0,goals:0,assists:0,shots:0,saves:0,yellow:0,red:0,rating:0});
 export function makePlayer(rng, id, rating, position, star = null) {
   const age = star ? (/Yamir|Dué|Yildan/.test(star[0]) ? 19 : /Levandos|Salá|Grizán/.test(star[0]) ? 33 : rng.int(23,28)) : rng.int(18,33);
@@ -63,10 +63,13 @@ export function makePlayer(rng, id, rating, position, star = null) {
 export function createTeams(seedNumber) {
   const rng = random(seedNumber); const teams = [];
   for (const c of COUNTRIES) {
-    const all = [...c.clubs, ...c.reserves.map((name,i)=>seed(name, 64+i%5, ['#5380b0','#b74a55','#479273','#c8ac48'][i%4]))];
+    const extra={es:['Castellón Costa','Burgos Catedral','Huesca Pirineos','Tenerife Volcán'],en:['Bristol Robins','Hull Humber','Stoke Potters','Derby Rams'],de:['Fürth Trébol','Paderborn Oeste','Magdeburgo Azul','Braunschweig León'],it:['Cesena Blanco','Modena Canarios','Perugia Umbra','Salerno Granate'],fr:['Amiens Norte','Dijon Borgoña','Clermont Auvernia','Guingamp Bretaña'],pt:['Penafiel Valle','Feirense Azul','Portimão Mar','Viseu Norte'],nl:['Venlo Frontera','Maastricht Mosa','Dordrecht Verde','Helmond Sur']}[c.id];
+    const reserveNames=[...c.reserves,...extra];
+    const third=Array.from({length:8},(_,i)=>`${c.name} Atlético ${['Norte','Sur','Este','Oeste','Unión','Ciudad','Deportivo','Estrella'][i]}`);
+    const all = [...c.clubs, ...reserveNames.map((name,i)=>seed(name, 64+i%5, ['#5380b0','#b74a55','#479273','#c8ac48'][i%4])),...third.map((name,i)=>seed(name,58+i%5,['#814bac','#df743e','#4388ba','#379673'][i%4]))];
     all.forEach((t,i)=>{
       const id = `${c.id}-${i+1}`;
-      const team = {id,name:t.name,short:t.name.split(' ').slice(0,2).join(' '),code:t.name.replace(/[^a-zA-Z]/g,'').slice(0,3).toUpperCase(),country:c.id,division:i<c.clubs.length?1:2,colors:t.colors,stadium:`Estadio ${t.name.split(' ')[0]}`,capacity:12000+(t.rating-60)*1800,budget:Math.round((t.rating-50)**3*3500),formation:'2-1-1',tactic:'balanced',academy:1,trainingLevel:1,roster:[],lineup:[],honours:[],form:[]};
+      const team = {id,name:t.name,short:t.name.split(' ').slice(0,2).join(' '),code:t.name.replace(/[^a-zA-Z]/g,'').slice(0,3).toUpperCase(),country:c.id,division:i<c.clubs.length?1:i<c.clubs.length+reserveNames.length?2:3,colors:t.colors,stadium:`Estadio ${t.name.split(' ')[0]}`,capacity:12000+(t.rating-60)*1800,budget:Math.round((t.rating-50)**3*3500),formation:'2-1-1',tactic:'balanced',academy:1,trainingLevel:1,roster:[],lineup:[],honours:[],form:[]};
       const roles = ['POR','DEF','DEF','MED','DEL','POR','DEF','MED','MED','DEL','DEL','DEF'];
       roles.forEach((position,j)=>{
         const star = t.stars.find(s=>s[1]===position && !team.roster.some(p=>p.name===s[0]));
