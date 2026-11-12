@@ -1,0 +1,14 @@
+{
+  "name": "super-soccer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Una carrera de fútbol offline con simulación y partidos arcade para PC.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs",
+    "dev": "node scripts/serve.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
