@@ -204,6 +204,7 @@ async function simulateWeek(){
 async function quickSimulate(){
   if(!world||busy)return;
   if(pendingMatch)throw new Error('Reanuda el partido guardado antes de simular otro resultado.');
+  if((world.weekDay??0)<6)throw new Error('Primero simula la semana completa para llegar al día de partido.');
   busy=true;const eventId=world.events[world.eventIndex]?.id;
   try {
     while((world.weekDay??0)<6){advanceDay(world);if((world.offers??[]).some(o=>o.unread))break;}
