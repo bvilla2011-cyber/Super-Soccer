@@ -142,7 +142,7 @@ function applyResult(world,f,result,rng) {
       if(p.yellows>=5) {p.ban=Math.max(1,p.ban);p.yellows-=5;}
       if(s.injury)p.injury=s.injury;
     }
-    const wages=t.roster.reduce((sum,p)=>sum+wage(p,t),0);
+    const wages=t.roster.reduce((sum,p)=>sum+wage(p),0);
     const attendanceScale={1:1,2:.4,3:.15}[t.division]??.15;
     const broadcast={1:180_000,2:60_000,3:20_000}[t.division]??20_000;
     const income=side===0?Math.round(t.capacity*(.5+rng()*.3)*23*attendanceScale)+broadcast:Math.round(broadcast*.75);
@@ -252,7 +252,7 @@ export function sellPlayer(world,playerId) {
 }
 export function renewPlayer(world,id) {
   const t=teamById(world,world.userTeam),p=t.roster.find(p=>p.id===id);if(!p)throw new Error('Jugador desconocido.');
-  const fee=wage(p,t)*12;if(t.budget<fee)throw new Error('No hay presupuesto para la prima.');
+  const fee=wage(p)*12;if(t.budget<fee)throw new Error('No hay presupuesto para la prima.');
   if(p.contract>=5)throw new Error('Ya tiene el contrato máximo.');t.budget-=fee;p.contract=Math.min(5,p.contract+2);p.morale=clamp(p.morale+8,0,100);addFinance(world,`Renovación: ${p.name}`,-fee);
 }
 export function upgrade(world,kind) {
