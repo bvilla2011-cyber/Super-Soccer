@@ -1,4 +1,4 @@
-import { COUNTRIES, ECONOMY_VERSION, createTeams, teamById, countryById, teamRating, overall, makePlayer, playerValue, initialTransferBudget, wage, emptyStats, activePlayers } from './data.js';
+import { COUNTRIES, ECONOMY_VERSION, MARKET_REFERENCE_AVERAGES_V2, createTeams, teamById, countryById, teamRating, overall, makePlayer, playerValue, initialTransferBudget, wage, emptyStats, activePlayers } from './data.js';
 import { random, shuffle, clamp, clone } from './utils.js';
 import { roundRobin, standings, knockoutPairs, knockoutLabel } from './competitions.js';
 import { simulateMatch, scorerTable } from './simulation.js';
@@ -20,10 +20,17 @@ export function createCareer({teamId='es-2',manager='Míster',difficulty='club',
 }
 export function rebaseCareerEconomy(world) {
   if(!world||(world.economyVersion??0)>=ECONOMY_VERSION)return false;
+  const previousVersion=world.economyVersion??0;
   for(const team of world.teams??[]) {
-    const rating=Math.max(50,teamRating(team));
-    const legacyBudget=Math.max(100_000,(rating-50)**3*3_500);
-    if(Number.isFinite(team.budget))team.budget=Math.round(team.budget*initialTransferBudget(team)/legacyBudget/10_000)*10_000;
+    if(!Number.isFinite(team.budget))continue;
+    if(previousVersion===2) {
+      const previousBudget=Math.max(100_000,initialTransferBudget(team,MARKET_REFERENCE_AVERAGES_V2));
+      team.budget=Math.round(team.budget*initialTransferBudget(team)/previousBudget/10_000)*10_000;
+    } else {
+      const rating=Math.max(50,teamRating(team));
+      const legacyBudget=Math.max(100_000,(rating-50)**3*3_500);
+      team.budget=Math.round(team.budget*initialTransferBudget(team)/legacyBudget/10_000)*10_000;
+    }
   }
   world.economyVersion=ECONOMY_VERSION;
   return true;

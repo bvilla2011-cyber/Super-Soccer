@@ -46,27 +46,33 @@ export function overall(player) {
   return Math.round(Object.keys(ATTRIBUTE_NAMES).reduce((sum,key,i)=>sum+a[key]*weights[i],0));
 }
 export const MARKET_REFERENCE_AVERAGES = {
+  en:[25_790_000,3_460_000,565_000], es:[10_490_000,1_040_000,187_000],
+  de:[9_010_000,1_210_000,237_000], it:[8_450_000,854_000,203_000],
+  fr:[8_830_000,1_100_000,145_000], pt:[3_980_000,434_000,37_000],
+  nl:[2_850_000,299_000,4_000]
+};
+export const MARKET_REFERENCE_AVERAGES_V2 = {
   en:[21_350_000,3_470_000,565_000], es:[10_370_000,1_030_000,187_000],
   de:[9_010_000,1_210_000,237_000], it:[8_450_000,830_000,203_000],
   fr:[8_830_000,1_100_000,145_000], pt:[3_980_000,434_000,37_000],
   nl:[2_860_000,299_000,4_000]
 };
 const REFERENCE_MODEL_AVERAGES={1:15_000_000,2:1_250_000,3:380_000};
-export const ECONOMY_VERSION=2;
-export function playerValue(p,team=null) {
+export const ECONOMY_VERSION=3;
+export function playerValue(p,team=null,marketAverages=MARKET_REFERENCE_AVERAGES) {
   const value=overall(p),ageFactor=p.age<23?1.45:p.age>30?.62:1;
   const potentialFactor=1+Math.max(0,p.potential-value)/22;
-  const marketAverage=MARKET_REFERENCE_AVERAGES[team?.country]?.[team?.division-1];
+  const marketAverage=marketAverages[team?.country]?.[team?.division-1];
   const context=marketAverage?Math.sqrt(marketAverage/REFERENCE_MODEL_AVERAGES[team.division]):1;
   const estimate=100_000*(1.195**(value-50))*ageFactor*potentialFactor*context;
-  return Math.round(clamp(estimate,10_000,200_000_000)/10_000)*10_000;
+  return Math.round(clamp(estimate,10_000,220_000_000)/10_000)*10_000;
 }
-export function teamMarketValue(team) {
-  return team.roster.reduce((sum,p)=>sum+playerValue(p,team),0);
+export function teamMarketValue(team,marketAverages=MARKET_REFERENCE_AVERAGES) {
+  return team.roster.reduce((sum,p)=>sum+playerValue(p,team,marketAverages),0);
 }
-export function initialTransferBudget(team) {
+export function initialTransferBudget(team,marketAverages=MARKET_REFERENCE_AVERAGES) {
   const limits={1:[5_000_000,180_000_000],2:[500_000,35_000_000],3:[100_000,8_000_000]}[team.division]??[100_000,8_000_000];
-  return Math.round(clamp(teamMarketValue(team)*.12,...limits)/100_000)*100_000;
+  return Math.round(clamp(teamMarketValue(team,marketAverages)*.12,...limits)/100_000)*100_000;
 }
 export const wage = (p,team=null) => Math.round(playerValue(p,team) / 4800 / 100) * 100 + 200;
 export const emptyStats = () => ({matches:0,minutes:0,goals:0,assists:0,shots:0,saves:0,yellow:0,red:0,rating:0});
