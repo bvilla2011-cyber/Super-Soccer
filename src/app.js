@@ -1,19 +1,29 @@
 import { createTeams, COUNTRIES, teamById, overall, teamRating, playerValue, teamMarketValue, wage, activePlayers, badgeSVG } from './data.js';
-import { createCareer, advance, nextFixture, nextSeason, buyPlayer, sellPlayer, renewPlayer, upgrade, promoteYouth, transferPrice, changeClub, unlockAchievements } from './career.js';
+import { createCareer, advance, nextFixture, nextSeason, buyPlayer, sellPlayer, renewPlayer, upgrade, upgradeCost, promoteYouth, promoteAcademyPlayer, dispatchScout, recruitAcademyProspect, scoutDeploymentCost, scoutCapacity, isImportantFixture, createPressConference, transferPrice, changeClub, unlockAchievements } from './career.js';
 import { listSlots, loadSlot, saveSlot, deleteSlot, exportSave, importSave, getSettings, setSettings } from './storage.js';
-import { submitOffer, advanceDay, signOffer, counterOffer } from './negotiations.js';
+import { submitOffer, advanceDay, signOffer, counterOffer, counterIncomingOffer, answerIncomingOffer } from './negotiations.js';
 import { MatchSimulation, matchSeed, STATE_LABELS } from './match.js';
 import { Renderer } from './render.js';
 import { Audio } from './audio.js';
-import { escape as e, money, clone, download, uid } from './utils.js';
+import { escape as e, money, clone, download, uid, random } from './utils.js';
 import * as UI from './ui.js';
+import { simulateMatch } from './simulation.js';
 
 const root=document.getElementById('app'),modalRoot=document.getElementById('modal-root');
 let world=null,view='landing',slot=1,slots=[],saveStatus='Guardado',pendingMatch=null,game=null,renderer=null,frameId=0,matchContext=null,busy=false,saveInFlight=false,lastCheckpoint=0;
 let setup={country:'es',division:1,teamId:'es-2',manager:'Biel',difficulty:'club',slot:1,mode:'career',opponent:'es-1'};
 const previewTeams=createTeams(42).teams;
-let filters={page:0,sort:'rating',recommended:false},competition=null,compTab='table',calendarAll=false,calendarEvent=null,settings=getSettings(),modalStack=[],lastFocus=null,saveTimer=null,searchTimer=null;
+let filters={page:0,sort:'rating'},competition=null,compTab='table',calendarAll=false,calendarEvent=null,settings=getSettings(),modalStack=[],lastFocus=null,saveTimer=null,searchTimer=null;
 const audio=new Audio(settings);
+
+function installFeatureStyles(){
+  if(document.getElementById('career-feature-styles'))return;
+  const style=document.createElement('style');style.id='career-feature-styles';style.textContent=`
+  .mood-readout{display:grid;gap:5px;min-width:100px}.mood-label{display:flex;justify-content:space-between;gap:10px;font-size:.7rem;font-weight:800;letter-spacing:.08em}.mood-track{height:7px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.12)}.mood-track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ff8b62,#ffd76d 48%,#79e5a3);transition:width .4s ease}
+  .press-room{display:grid;gap:18px}.press-stage{position:relative;min-height:120px;display:flex;align-items:center;justify-content:center;gap:14px;overflow:hidden;border-radius:16px;background:radial-gradient(ellipse at 50% 120%,rgba(96,230,170,.22),transparent 50%),linear-gradient(135deg,#102d32,#17212e 65%,#271c32);animation:press-in .45s ease-out}.press-stage:before,.press-stage:after{content:'';position:absolute;top:-30px;width:90px;height:200px;background:linear-gradient(180deg,transparent,rgba(210,255,230,.09),transparent);transform:rotate(25deg);animation:press-light 3.2s ease-in-out infinite}.press-stage:before{left:12%}.press-stage:after{right:12%;animation-delay:1.2s}.press-stage b{z-index:1;font-size:1.05rem;letter-spacing:.16em}.press-stage small{z-index:1;display:block;opacity:.72}.press-mic{z-index:1;width:7px;height:42px;border-radius:8px;background:#e5c978;box-shadow:0 0 22px #e5c97888;animation:mic-bob 1.7s ease-in-out infinite}.press-question-card{animation:press-in .35s ease-out}.press-answer{width:100%;text-align:left;margin:6px 0}.press-target{display:flex;align-items:center;gap:12px;padding:10px 0}.press-choice-list{display:grid;gap:5px}.academy-player-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:12px 0;border-top:1px solid rgba(255,255,255,.09)}.academy-player-row>div:first-child{display:grid;gap:4px}.scout-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:end}.scout-controls label{display:grid;gap:6px}.mail-actions{display:flex;flex-wrap:wrap;gap:8px}.mail-section{margin:16px 0}.mail-section h3{font-size:.78rem;letter-spacing:.12em;color:#9faeb6}@keyframes press-in{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes press-light{0%,100%{opacity:.15;transform:translateX(-15px) rotate(25deg)}50%{opacity:.65;transform:translateX(15px) rotate(25deg)}}@keyframes mic-bob{0%,100%{transform:translateY(2px)}50%{transform:translateY(-3px)}}
+  `;document.head.append(style);
+}
+installFeatureStyles();
 
 function toast(text,error=false){const n=document.createElement('div');n.className=`toast ${error?'error':''}`;n.textContent=text;document.getElementById('toasts').append(n);setTimeout(()=>n.remove(),error?9000:4000);}
 function status(text){saveStatus=text;const el=document.getElementById('save-state');if(el)el.textContent=text;}
@@ -25,7 +35,13 @@ function render(){
     if(view==='landing')view='home';
     if(view==='home'){
       content=UI.dashboard(world,!!pendingMatch);
-      if(!pendingMatch&&!world.seasonComplete&&(world.weekDay??0)<6)content=content.replace('SIMULAR PARTIDO',`SIMULAR SEMANA · DÍA ${(world.weekDay??0)+1}/7`);
+      if(!pendingMatch&&!world.seasonComplete) {
+        if((world.weekDay??0)<6)content=content.replace('SIMULAR PARTIDO',`SIMULAR SEMANA · DÍA ${(world.weekDay??0)+1}/7`);
+        else if(nextFixture(world)) {
+          const quick=UI.button(`${UI.icon('bolt')} SIMULACIÓN RÁPIDA`,'quick-sim','btn secondary quick-sim-button');
+          content=content.replace('</div><div class="hero-match-meta">',`${quick}</div><div class="hero-match-meta">`);
+        }
+      }
     }
     if(view==='squad')content=UI.squad(world);
     if(view==='market')content=UI.market(world,filters);
@@ -39,8 +55,8 @@ function render(){
   root.innerHTML=world?UI.shell(world,view,content,saveStatus,slot):UI.bareShell(content);
   if(world){
     const top=root.querySelector('.topbar-right');
-    const unread=(world.offers??[]).some(o=>o.unread);
-    top?.insertAdjacentHTML('afterbegin',UI.button(`${UI.icon('mail')}${unread?'<i class="mail-dot"></i>':''}`,'inbox','icon-button mail-button','aria-label="Bandeja de fichajes" title="Bandeja de fichajes"'));
+    const unread=(world.offers??[]).some(o=>o.unread)||(world.scoutingReports??[]).some(r=>r.unread);
+    top?.insertAdjacentHTML('afterbegin',UI.button(`${UI.icon('mail')}${unread?'<i class="mail-dot"></i>':''}`,'inbox','icon-button mail-button','aria-label="Buzón del club" title="Buzón del club"'));
   }
 }
 function navigate(next){if(game)return;view=next;if(!world&&!['landing','saves','settings'].includes(view))view='landing';render();window.scrollTo({top:0});}
@@ -66,9 +82,9 @@ function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{save()
 async function load(id,backup=false){
   if(busy)return;
   const payload=await loadSlot(id,{backup});if(!payload){toast('Esta ranura está vacía.');return;}
-  stopMatch();world=payload.world;pendingMatch=payload.match;slot=id;view='home';competition=null;calendarEvent=null;status(payload.recovered?'Copia anterior recuperada':'✓ Guardado en este PC');closeModal(true);if(payload.economyMigrated)await save();render();if(payload.recovered)toast('Se ha recuperado la copia anterior de la carrera.');if(payload.economyMigrated)toast('Presupuestos actualizados a la nueva economía del mercado.');if(pendingMatch)toast('Hay una simulación en curso. Pulsa Reanudar simulación para continuar.');
+  stopMatch();world=payload.world;pendingMatch=payload.match;slot=id;view='home';competition=null;calendarEvent=null;status(payload.recovered?'Copia anterior recuperada':'✓ Guardado en este PC');closeModal(true);if(payload.economyMigrated)await save();render();if(payload.recovered)toast('Se ha recuperado la copia anterior de la carrera.');if(payload.economyMigrated)toast('Plantillas y presupuestos actualizados para esta temporada.');if(pendingMatch)toast('Hay una simulación en curso. Pulsa Reanudar simulación para continuar.');if(world.pendingPressConference)openPressConference();
 }
-function findPlayer(id,w=world){const team=w?.teams.find(t=>t.roster.some(p=>p.id===id));return {p:team?.roster.find(p=>p.id===id)??w?.freeAgents.find(p=>p.id===id),team};}
+function findPlayer(id,w=world){const team=w?.teams.find(t=>t.roster.some(p=>p.id===id)||(t.academyPlayers??[]).some(p=>p.id===id));return {p:team?.roster.find(p=>p.id===id)??team?.academyPlayers?.find(p=>p.id===id)??w?.freeAgents.find(p=>p.id===id),team};}
 function showPlayer(id){const w=matchContext?.friendly?matchContext.world:world;const {p,team}=findPlayer(id,w);if(p){let html=UI.playerCard(w,p,team);if(game)html=html.replace(/<div class="modal-actions">[\s\S]*?<\/div><\/div>$/,'</div>');modal('INFORME DEL JUGADOR',html,{wide:true});}}
 function updateSetupModal(){const top=modalStack.at(-1);if(top?.title==='NUEVO PROYECTO'){top.content=UI.setupView(previewTeams,slots,setup);renderModal();}}
 function newProject(id=null){if(id)setup.slot=Number(id);else setup.slot=slots.find(s=>!s.exists)?.id??1;modal('NUEVO PROYECTO',UI.setupView(previewTeams,slots,setup),{wide:true});}
@@ -98,7 +114,7 @@ function beginMatch(w,f,friendly=false){
   game=new MatchSimulation({home:teamById(w,f.home),away:teamById(w,f.away),fixtureId:f.id,userSide:f.home===w.userTeam?0:1,knockout:f.stage==='knockout',difficulty:w.difficulty,duration:settings.duration,seed:matchSeed(w,f.id),snapshot,onEvent:ev=>{
     audio.play(ev.type);if(ev.type==='goal')renderer?.goalParticles(ev.side);if(ev.type==='halftime')openHalfTime();
   },onEnd:result=>finishMatch(result)});
-  renderer=new Renderer(document.getElementById('match-canvas'),settings);lastCheckpoint=performance.now();audio.unlock().then(()=>{audio.stopMusic();audio.startCrowd();});
+  renderer=new Renderer(document.getElementById('match-canvas'),settings);lastCheckpoint=performance.now();audio.unlock().then(()=>audio.startCrowd());
   let last=performance.now(),lastHUD=0;
   const frame=now=>{
     if(!game||view!=='match')return;
@@ -115,16 +131,13 @@ function beginMatch(w,f,friendly=false){
 function updateHUD(){
   if(!game)return;
   const set=(id,text)=>{const el=document.getElementById(id);if(el&&el.textContent!==String(text))el.textContent=text;};
-  const minute=game.half===1?Math.floor(game.clock/60):45+Math.floor(Math.max(0,game.clock-2700)/60);
-  const matchEvents=[...(game.firstHalf?.events??[]),...(game.secondHalf?.events??[])].filter(ev=>ev.minute<=minute&&['goal','save','wide','post'].includes(ev.type));
-  const shots=[matchEvents.filter(ev=>ev.side===0).length,matchEvents.filter(ev=>ev.side===1).length];
-  set('home-score',game.score[0]);set('away-score',game.score[1]);set('match-clock',`${String(Math.floor(game.clock/60)).padStart(2,'0')}:${String(Math.floor(game.clock%60)).padStart(2,'0')}`);set('match-state',STATE_LABELS[game.state]?.toUpperCase());set('home-shots',shots[0]);set('away-shots',shots[1]);
+  set('home-score',game.score[0]);set('away-score',game.score[1]);set('match-clock',`${String(Math.floor(game.clock/60)).padStart(2,'0')}:${String(Math.floor(game.clock%60)).padStart(2,'0')}`);set('match-state',STATE_LABELS[game.state]?.toUpperCase());set('home-shots',game.visibleShots[0]);set('away-shots',game.visibleShots[1]);
   const part=game.half===1?game.firstHalf:game.secondHalf;const possession=Math.round(50+((part?.stats.possession[0]??50)-50)*Math.min(1,((game.clock-(game.half-1)*2700)/1000)));
   set('home-possession',`${possession}%`);set('away-possession',`${100-possession}%`);document.getElementById('possession-bar').style.width=`${possession}%`;
   set('pause-button',game.paused?'Continuar':'Pausar');
-  const event=game.visibleEvents[0];if(event)set('live-comment',`${event.minute}' · ${event.name}. ${event.type==='goal'?`${event.finishLabel??'Gran definición'} y el balón termina en la red.`:({save:'El portero evita el gol.',post:'¡La madera rechaza el disparo!',wide:'La ocasión se pierde por poco.',yellow:'El árbitro muestra la amarilla.',red:'Expulsión. El equipo se queda con uno menos.',injury:'El jugador necesita atención médica.'})[event.type]??''}`);
+  const event=game.visibleEvents[0];if(event)set('live-comment',`${event.minute}' · ${event.name}. ${({goal:'¡El balón termina en la red!',save:'El portero evita el gol.',post:'¡La madera rechaza el disparo!',wide:'La ocasión se pierde por poco.',yellow:'El árbitro muestra la amarilla.',red:'Expulsión. El equipo se queda con uno menos.',injury:'El jugador necesita atención médica.',foul:'El árbitro señala falta.'})[event.type]??''}`);
   const feed=document.getElementById('live-feed'),key=game.visibleEvents.length;
-  if(feed.dataset.count!==String(key)){feed.dataset.count=key;feed.innerHTML=game.visibleEvents.slice(0,10).map(ev=>`<div class="feed-event ${ev.type}"><b>${ev.minute}'</b><span>${({goal:'⚽',yellow:'▰',red:'▰',save:'◎',post:'◈',wide:'↗',injury:'✚'})[ev.type]??'·'}</span><div><strong>${e(ev.name)}</strong><small>${ev.type==='goal'?e(ev.finishLabel??'GOL'):({yellow:'AMARILLA',red:'ROJA',save:'PARADA',post:'AL PALO',wide:'FUERA',injury:'LESIÓN'})[ev.type]}</small></div></div>`).join('')||'<p class="muted">La historia está por escribirse.</p>';}
+  if(feed.dataset.count!==String(key)){feed.dataset.count=key;feed.innerHTML=game.visibleEvents.slice(0,10).map(ev=>`<div class="feed-event ${ev.type}"><b>${ev.minute}'</b><span>${({goal:'⚽',yellow:'▰',red:'▰',save:'◎',post:'◈',wide:'↗',injury:'✚',foul:'⚑'})[ev.type]??'·'}</span><div><strong>${e(ev.name)}</strong><small>${({goal:'GOL',yellow:'AMARILLA',red:'ROJA',save:'PARADA',post:'AL PALO',wide:'FUERA',injury:'LESIÓN',foul:'FALTA'})[ev.type]}</small></div></div>`).join('')||'<p class="muted">La historia está por escribirse.</p>';}
   if(game.state==='Shootout')set('penalty-live',`PENALTIS · ${game.penaltyVisible.join(' – ')}`);
   document.querySelectorAll('.speed-btn').forEach(el=>el.classList.toggle('active',Number(el.dataset.action.split('-')[1])===game.speed));
   const overlay=document.getElementById('match-overlay');
@@ -132,21 +145,48 @@ function updateHUD(){
   if(overlay.dataset.state!==overlayKey){overlay.dataset.state=overlayKey;overlay.innerHTML=overlayKey==='paused'?`<div><div class="eyebrow">EL PARTIDO TE ESPERA</div><h2>Simulación en pausa</h2><p>El autoguardado conserva el minuto y las jugadas pendientes.</p>${UI.button('Continuar retransmisión →','pause','btn primary')}</div>`:overlayKey==='half'?`<div><div class="eyebrow">45:00 / DESCANSO</div><h2>Tu momento de decidir.</h2>${UI.button('Abrir la pizarra','halftime','btn primary')}</div>`:overlayKey==='busy'?'<div><h2>Registrando la jornada…</h2><p>Resultados, estadísticas y guardado.</p></div>':'';}
 }
 function pause(force=false){if(!game||busy)return;if(game.state==='HalfTime'){openHalfTime();return;}game.paused=force||!game.paused;updateHUD();if(game.paused){checkpoint();scheduleSave();}else audio.unlock();}
-function halfTimeWorld(){const w=clone(matchContext.world);const bad=game.firstHalf?.players??{};const t=teamById(w,w.userTeam);t.matchLimit=11-t.roster.filter(p=>bad[p.id]?.red).length;for(const p of t.roster){if(bad[p.id]?.red)p.ban=1;if(bad[p.id]?.injury)p.injury=1;}return w;}
-function openHalfTime(){if(!game||game.state!=='HalfTime'||busy)return;closeModal(true);const w=halfTimeWorld();modal('DESCANSO · PREPARA LA SEGUNDA PARTE',`<div class="halftime-heading"><div><h2>${game.score.join(' – ')}</h2><p>Elige los once que seguirán. Arrastra suplentes a la camiseta del jugador que quieras cambiar.</p></div>${UI.button('Volver al campo →','second-half','btn primary large')}</div>${UI.squad(w,true)}`,{wide:true});checkpoint();if(!matchContext.friendly)scheduleSave();}
-function stopMatch(){cancelAnimationFrame(frameId);frameId=0;renderer?.destroy();renderer=null;game=null;audio.stopCrowd();if(settings.music)audio.startMusic();matchContext=null;}
+function halfTimeWorld(){const w=clone(matchContext.world);const bad=game.firstHalf?.players??{};const t=teamById(w,w.userTeam);t.matchLimit=5-t.roster.filter(p=>bad[p.id]?.red).length;for(const p of t.roster){if(bad[p.id]?.red)p.ban=1;if(bad[p.id]?.injury)p.injury=1;}return w;}
+function openHalfTime(){if(!game||game.state!=='HalfTime'||busy)return;closeModal(true);const w=halfTimeWorld();modal('DESCANSO · PREPARA LA SEGUNDA PARTE',`<div class="halftime-heading"><div><h2>${game.score.join(' – ')}</h2><p>Elige los cinco que jugarán la segunda parte. Los expulsados y lesionados no pueden volver.</p></div>${UI.button('Volver al campo →','second-half','btn primary large')}</div>${UI.squad(w,true)}`,{wide:true});checkpoint();if(!matchContext.friendly)scheduleSave();}
+function stopMatch(){cancelAnimationFrame(frameId);frameId=0;renderer?.destroy();renderer=null;game=null;audio.stopCrowd();matchContext=null;}
 async function finishMatch(result){
   if(!game||busy)return;busy=true;const context=matchContext;const f=context.fixture;game.paused=true;updateHUD();
   try{
     if(context.friendly){Object.assign(f,result);stopMatch();view=world?'home':'landing';render();modal('FINAL DEL AMISTOSO',UI.report(context.world,f),{wide:true});}
     else{
+      const needsPressConference=isImportantFixture(world,f);
       const completed=advance(world,result);pendingMatch=null;
+      if(needsPressConference&&completed)world.pendingPressConference=createPressConference(world,completed);
       // A completed simulation is committed exactly once before the next match opens.
       try{await save();}catch(error){toast('La jornada se ha completado, pero no se ha podido guardar. Exporta una copia.',true);}
-      stopMatch();view='home';render();modal('EL PARTIDO HA TERMINADO',UI.report(world,completed)+`<div class="modal-actions">${UI.button('Volver al banquillo →','close-modal','btn primary')}</div>`,{wide:true});
+      stopMatch();view='home';render();if(world.pendingPressConference)openPressConference();else modal('EL PARTIDO HA TERMINADO',UI.report(world,completed)+`<div class="modal-actions">${UI.button('Volver al banquillo →','close-modal','btn primary')}</div>`,{wide:true});
     }
   }catch(error){toast(`No se pudo completar la jornada: ${error.message}`,true);}
   finally{busy=false;if(game)updateHUD();}
+}
+function openPressConference(){
+  const press=world?.pendingPressConference;if(!press)return;
+  modal('RUEDA DE PRENSA',UI.pressConference(world,press),{wide:true,closable:false});
+}
+async function answerPressConference(choiceIndex){
+  if(busy)return;const press=world?.pendingPressConference,question=press?.questions?.[press.index],answer=question?.answers?.[choiceIndex];
+  if(!press||!question||!answer)return;
+  busy=true;
+  try{
+    const own=teamById(world,world.userTeam),effectScale={rookie:.8,club:1,legend:1.2}[world.difficulty]??1;
+    own.happiness=Math.max(20,Math.min(90,(own.happiness??65)+(answer.teamDelta??0)*effectScale));
+    if(question.target){const player=own.roster.find(p=>p.id===question.target);if(player)player.morale=Math.max(0,Math.min(100,(player.morale??65)+(answer.playerDelta??0)*effectScale));}
+    press.index++;
+    const finished=press.index>=press.questions.length,fixture=world.fixtures.find(f=>f.id===press.fixtureId);
+    if(finished)world.pendingPressConference=null;
+    await save();closeModal(true);render();
+    if(finished)modal('EL PARTIDO HA TERMINADO',UI.report(world,fixture)+`<div class="modal-actions">${UI.button('Volver al banquillo →','close-modal','btn primary')}</div>`,{wide:true});
+    else openPressConference();
+  }catch(error){
+    closeModal(true);render();
+    if(world.pendingPressConference)openPressConference();
+    else {const completed=world.fixtures.find(f=>f.id===press.fixtureId);if(completed)modal('EL PARTIDO HA TERMINADO',UI.report(world,completed),{wide:true});}
+    throw error;
+  }finally{busy=false;}
 }
 async function exitMatch(){
   if(!game||busy)return;
@@ -165,13 +205,11 @@ async function runMatchday(){
 function chooseLineup(id){
   const w=matchContext?.friendly?matchContext.world:world;const team=teamById(w,w.userTeam);const p=team.roster.find(p=>p.id===id);if(!p)return;
   const current=game?.state==='HalfTime'?activePlayers(teamById(halfTimeWorld(),team.id)):activePlayers(team);
-  modal('CAMBIO EN LA ALINEACIÓN',`<h2>${e(p.name)} entra en el once.</h2><p class="muted">Elige a quién sustituye. ${p.position==='POR'?'Debe ocupar el puesto de portero.':'Puede cambiarse por cualquier jugador de campo.'}</p><div class="lineup-options">${current.filter(q=>p.position==='POR'?q.position==='POR':q.position!=='POR').map(q=>UI.button(`${UI.rating(overall(q))}<span>${e(q.name)}<small>${q.position} · Físico ${Math.round(q.fitness)}%</small></span><b>⇄</b>`,`swap-${id}|${q.id}`,'lineup-option')).join('')}</div>`);
+  modal('CAMBIO EN LA ALINEACIÓN',`<h2>${e(p.name)} entra en el cinco.</h2><p class="muted">Elige a quién sustituye. ${p.position==='POR'?'Debe ocupar el puesto de portero.':'Debe sustituir a un jugador de campo.'}</p><div class="lineup-options">${current.filter(q=>p.position==='POR'?q.position==='POR':q.position!=='POR').map(q=>UI.button(`${UI.rating(overall(q))}<span>${e(q.name)}<small>${q.position} · Físico ${Math.round(q.fitness)}%</small></span><b>⇄</b>`,`swap-${id}|${q.id}`,'lineup-option')).join('')}</div>`);
 }
 function applySwap(input){
-  if(pendingMatch&&!game)throw new Error('Reanuda la simulación guardada antes de cambiar la alineación.');
   const [inId,outId]=input.split('|');const w=matchContext?.friendly?matchContext.world:world,t=teamById(w,w.userTeam);const incoming=t.roster.find(p=>p.id===inId);if(!incoming||incoming.injury||incoming.ban)throw new Error('El jugador no está disponible.');
   const active=game?.state==='HalfTime'?activePlayers(teamById(halfTimeWorld(),t.id)):activePlayers(t);const outgoing=active.find(p=>p.id===outId);if(!outgoing||active.some(p=>p.id===inId))return;
-  if((incoming.position==='POR')!==(outgoing.position==='POR'))throw new Error('El portero solo puede cambiarse por otro portero.');
   t.lineup=active.map(p=>p.id===outId?inId:p.id);closeModal(true);
   if(game?.state==='HalfTime')openHalfTime();else render();if(world)scheduleSave();
 }
@@ -181,46 +219,65 @@ function offer(id,type='transfer',suggested=null){
   const recommendations=world.teams.filter(t=>t.id!==own.id).flatMap(t=>t.roster.map(q=>({p:q,team:t}))).filter(x=>x.p.id!==id&&!x.p.loan&&x.p.position===p.position&&transferPrice(x.p,x.team,own)<=own.budget).sort((a,b)=>Math.abs(transferPrice(a.p,a.team,own)-fee)-Math.abs(transferPrice(b.p,b.team,own)-fee)).slice(0,3);
   modal('NEGOCIACIÓN',`<h2>${e(p.name)} · ${type==='loan'?'CESIÓN':'TRASPASO'}</h2><p>Valor de mercado estimado: <b>${money(marketValue)}</b> · ${type==='loan'?'Prima de cesión sugerida':'Oferta inicial sugerida'}: <b>${money(asking)}</b> · Presupuesto: <b>${money(own.budget)}</b></p><label class="offer-input">TU OFERTA EN EUROS<input id="offer-amount" type="number" min="0" max="${own.budget}" step="10000" value="${suggested??asking}"></label><div class="modal-actions">${UI.button('ENVIAR OFERTA',`send-${type}-${id}`,'btn primary')}${team&&type==='transfer'?UI.button('PEDIR CESIÓN',`loan-${id}`,'btn secondary'):''}</div><h3>RECOMENDADOS PARA TU PRESUPUESTO</h3><div class="club-offers">${recommendations.map(x=>UI.button(`${UI.rating(overall(x.p))}<span>${e(x.p.name)}<small>${e(x.team.short)} · valor ${money(playerValue(x.p,x.team))} · oferta ${money(transferPrice(x.p,x.team,own))}</small></span> ↗`,`offer-${x.p.id}`,'club-offer')).join('')||'<p>No hay alternativas asequibles para esta posición.</p>'}</div>`,{wide:true});
 }
+function transferMailCard(o){
+  const incoming=o.direction==='incoming',club=teamById(world,o.buyerId)?.name;
+  let status,actions='';
+  if(incoming){
+    status=({incoming:`${club??'Un club'} ofrece ${money(o.fee)} por tu jugador.`,countered:'Has enviado una contraoferta. Esperando respuesta.', 'counter-accepted':`El club acepta tu contraoferta de ${money(o.counter)}.`, 'counter-rejected':`El club propone ${money(o.buyerCounter)} como última oferta.`,sold:`Traspaso completado por ${money(o.saleFee)}.`,declined:'Has rechazado esta oferta.',unavailable:'El club o el jugador ya no están disponibles.'})[o.status]??'Oferta de otro club.';
+    if(o.status==='incoming')actions=UI.button('ACEPTAR',`incoming-accept-${o.id}`,'btn primary compact')+UI.button('RECHAZAR',`incoming-reject-${o.id}`,'btn secondary compact')+UI.button('CONTRAOFERTAR',`incoming-counter-${o.id}`,'btn secondary compact');
+    if(o.status==='countered')actions='';
+    if(o.status==='counter-accepted')actions=UI.button(`ACEPTAR · ${money(o.counter)}`,`incoming-accept-counter-${o.id}`,'btn primary compact')+UI.button('RECHAZAR',`incoming-reject-${o.id}`,'btn secondary compact');
+    if(o.status==='counter-rejected')actions=UI.button(`ACEPTAR · ${money(o.buyerCounter)}`,`incoming-accept-final-${o.id}`,'btn primary compact')+UI.button('RECHAZAR',`incoming-reject-${o.id}`,'btn secondary compact')+UI.button('CONTRAOFERTAR',`incoming-counter-${o.id}`,'btn secondary compact');
+  }else{
+    status=({pending:'Esperando respuesta del club.',accepted:'¡Oferta aceptada! Firma para cerrar la operación.',rejected:'Oferta rechazada. Puedes volver a negociar.',signed:'Operación completada.',replaced:'Sustituida por una nueva oferta.',unavailable:'El club o jugador ya no está disponible.'})[o.status]??'Negociación cerrada.';
+    if(o.status==='accepted')actions=UI.button('FIRMAR',`sign-offer-${o.id}`,'btn primary compact');
+    if(o.status==='rejected')actions=UI.button(`CONTRAOFERTAR · ${money(o.counter)}`,`counter-${o.id}`,'btn secondary compact');
+  }
+  return `<article class="mail-card"><div><b>${e(o.name)} · ${incoming?'OFERTA RECIBIDA':o.type==='loan'?'CESIÓN':'TRASPASO'}</b><p>${e(status)}${incoming&&club?` · ${e(club)}`:''}</p></div><div class="mail-actions">${actions}</div></article>`;
+}
+function scoutReportCard(report){
+  const p=report.prospect;
+  const title=p?`${p.name} · ${p.age} años · ${p.position} · POT ${p.potential}`:`Informe archivado · Juvenil ${report.status==='signed'?'fichado':'sin disponibilidad'}`;
+  const body=p?`${p.note} · Media ${overall(p)} · Coste ${money(report.fee)}.`:report.status==='signed'?'El jugador ya forma parte de tu cantera.':'Este informe ya no está disponible.';
+  return `<article class="mail-card"><div><b>INFORME DE OJEADOR · ${e(countryByIdSafe(report.country))}</b><p>${e(title)}<br>${e(body)}</p></div><div class="mail-actions">${p&&report.status==='available'?UI.button(`FICHAR EN CANTERA · ${money(report.fee)}`,`recruit-report-${report.id}`,'btn primary compact'):''}</div></article>`;
+}
+function countryByIdSafe(id){return COUNTRIES.find(c=>c.id===id)?.name??id;}
 function inbox(){
-  const offers=world.offers??[];for(const o of offers)o.unread=false;
-  closeModal(true);render();
-  modal('BANDEJA DE FICHAJES',offers.length?offers.map(o=>`<article class="mail-card"><div><b>${e(o.name)} · ${o.type==='loan'?'CESIÓN':'TRASPASO'}</b><p>${({pending:'Esperando respuesta',accepted:'¡Oferta aceptada! Firma para cerrar la operación.',rejected:'Oferta rechazada. Puedes volver a negociar.',signed:'Operación completada',replaced:'Sustituida por una nueva oferta',unavailable:'El club o jugador ya no está disponible'})[o.status]} · ${money(o.fee)}</p></div><div>${o.status==='accepted'?UI.button('FIRMAR',`sign-offer-${o.id}`,'btn primary compact'):o.status==='rejected'?UI.button(`CONTRAOFERTAR · ${money(o.counter)}`,`counter-${o.id}`,'btn secondary compact'):''}</div></article>`).join(''):'<p>No tienes mensajes de fichajes.</p>',{wide:true});
-  scheduleSave();
+  const offers=world.offers??[],reports=world.scoutingReports??[];for(const o of offers)o.unread=false;for(const report of reports)report.unread=false;
+  const transfers=offers.length?offers.map(transferMailCard).join(''):'<p class="muted">No tienes ofertas de fichajes.</p>';
+  const scouting=reports.length?reports.map(scoutReportCard).join(''):'<p class="muted">Todavía no hay informes de cantera. Despliega un ojeador desde MI CLUB.</p>';
+  closeModal(true);render();modal('BUZÓN DEL CLUB',`<section class="mail-section"><h3>FICHAJES</h3>${transfers}</section><section class="mail-section"><h3>INFORMES DE CANTERA</h3>${scouting}</section>`,{wide:true});scheduleSave();
 }
 async function simulateWeek(){
   if(busy)return;busy=true;
-  modal('AVANZANDO LA SEMANA',`<div class="matchday-animation"><div class="rolling-ball">⚽</div><h2 id="week-title">Preparando la semana…</h2><p>El calendario avanza hasta el partido o una respuesta importante.</p><div class="loading-line"></div></div>`,{closable:false});
+  modal('AVANZANDO LA SEMANA',`<div class="matchday-animation"><div class="rolling-ball">⚽</div><h2 id="week-title">Preparando la semana…</h2><p>Se disputan los entrenamientos, llegan las ofertas y se resuelven los informes antes del día de partido.</p><div class="loading-line"></div></div>`,{closable:false});
   try{
     while((world.weekDay??0)<6){
       await new Promise(resolve=>setTimeout(resolve,280));
       advanceDay(world);
       const label=document.getElementById('week-title');if(label)label.textContent=`DÍA ${world.weekDay+1} / 7`;
-      if((world.offers??[]).some(o=>o.unread))break;
     }
     await save();closeModal(true);render();
-    toast((world.offers??[]).some(o=>o.unread)?'Tienes una respuesta en el buzón.':'¡Día de partido!');
+    toast((world.offers??[]).some(o=>o.unread)||(world.scoutingReports??[]).some(r=>r.unread)?'Semana completada. Tienes un mensaje en el buzón.':'Semana completada. ¡Día de partido!');
   }finally{if(modalStack.at(-1)?.title==='AVANZANDO LA SEMANA')closeModal(true);busy=false;}
 }
 async function quickSimulate(){
-  if(!world||busy)return;
-  if(pendingMatch)throw new Error('Reanuda el partido guardado antes de simular otro resultado.');
-  if((world.weekDay??0)<6)throw new Error('Primero simula la semana completa para llegar al día de partido.');
-  busy=true;const eventId=world.events[world.eventIndex]?.id;
-  try {
-    while((world.weekDay??0)<6){advanceDay(world);if((world.offers??[]).some(o=>o.unread))break;}
-    if((world.offers??[]).some(o=>o.unread)){
-      await save();render();inbox();toast('La semana se detuvo para que leas la respuesta del club.');return;
-    }
-    const ownFixture=nextFixture(world),completed=advance(world);
-    await save();view='home';render();
-    if(ownFixture&&completed)modal('SIMULACIÓN RÁPIDA',UI.report(world,completed)+`<div class="quick-result-ribbon">Resultado calculado con las medias, tácticas, forma y atributos de los jugadores.</div><div class="modal-actions">${UI.button('VOLVER AL BANQUILLO','close-modal','btn primary')}</div>`,{wide:true});
-    else {
-      const games=world.fixtures.filter(f=>f.eventId===eventId&&!f.bye);
-      modal('SEMANA SIMULADA',`<div class="signing-show"><div class="season-star">⚽</div><h2>JORNADA COMPLETADA</h2><p>Tu equipo descansaba; el resto de la competición ya tiene resultados.</p><div class="matchday-results">${games.slice(0,20).map(f=>UI.fixtureRow(world,f)).join('')}</div>${UI.button('CONTINUAR','close-modal','btn primary')}</div>`,{wide:true});
-    }
-  } finally {busy=false;}
+  if(!world||busy||pendingMatch||(world.weekDay??0)<6)return;
+  const fixture=nextFixture(world);if(!fixture){toast('Tu equipo no juega en esta jornada.');return;}
+  busy=true;modal('SIMULACIÓN RÁPIDA',`<div class="matchday-animation"><div class="rolling-ball">⚽</div><h2>El árbitro da la señal…</h2><p>Se están calculando el resultado, los goleadores y las estadísticas.</p><div class="loading-line"></div></div>`,{closable:false});
+  try{
+    await new Promise(resolve=>setTimeout(resolve,550));
+    const home=teamById(world,fixture.home),away=teamById(world,fixture.away);
+    const result=simulateMatch(home,away,random(matchSeed(world,fixture.id)),{knockout:fixture.stage==='knockout',difficulty:world.difficulty,userTeam:world.userTeam});
+    result.fixtureId=fixture.id;
+    const completed=advance(world,result);
+    try{await save();}catch(error){toast('El partido se ha completado, pero no se ha podido guardar. Exporta una copia.',true);}
+    closeModal(true);view='home';render();
+    modal('SIMULACIÓN RÁPIDA',UI.report(world,completed)+`<div class="modal-actions">${UI.button('Volver al banquillo →','close-modal','btn primary')}</div>`,{wide:true});
+  }catch(error){closeModal(true);toast(error.message,true);}
+  finally{busy=false;}
 }
-function helpContent(){return `<h2>El fútbol se dirige desde el banquillo.</h2><div class="guide-list"><article><b>01</b><div><h3>Construye tu equipo</h3><p>Plantilla de 25 jugadores: once titulares y catorce reservas. Arrastra un suplente a una camiseta en la pizarra para cambiar la alineación. Forma, condición y atributos afectan al rendimiento.</p></div></article><article><b>02</b><div><h3>Elige cómo vivir el partido</h3><p>Disfruta la retransmisión animada con pases, presión, disparos y celebraciones, o usa Simulación rápida para resolver el encuentro según las medias y la forma de los equipos. En la retransmisión puedes ajustar velocidad, pausar y hacer cambios al descanso.</p></div></article><article><b>03</b><div><h3>Piensa en varias temporadas</h3><p>Negocia fichajes, cesiones y renovaciones desde el buzón. Las ofertas esperan respuesta; las aceptadas necesitan firma. El potencial es un techo, no una promesa de crecimiento. Los jóvenes necesitan tiempo, minutos e instalaciones.</p></div></article><article><b>04</b><div><h3>Compite en Europa</h3><p>Siete países con tres divisiones, copas y supercopas. Las tres copas europeas tienen grupos y eliminatorias. Los dos últimos de cada división descienden y los dos primeros de la división inferior ascienden.</p></div></article><article><b>05</b><div><h3>Cuida tu carrera</h3><p>El juego guarda durante el partido y al terminar las jornadas. Hay tres ranuras con copia anterior y archivos exportables para conservar o trasladar tu progreso.</p></div></article></div><p class="hint">Super Soccer tiene diseño, código, arte y audio propios. Los clubes y sus plantillas son ficticios; algunas estrellas tienen alias y rasgos visuales estilizados inspirados en futbolistas conocidos. No es una base de datos oficial ni reproduce todas las funciones de otro juego.</p>`;}
+function helpContent(){return `<h2>El fútbol se dirige desde el banquillo.</h2><div class="guide-list"><article><b>01</b><div><h3>Construye tu equipo</h3><p>Un portero y cuatro jugadores de campo disputan las retransmisiones. Alinea jugadores desde Plantilla y elige formación y táctica. Los atributos, la forma física y la moral influyen en el resultado.</p></div></article><article><b>02</b><div><h3>Sigue la simulación animada</h3><p>Los jugadores se mueven automáticamente. No hay control directo, tiros manuales ni resultados instantáneos. Ajusta la velocidad de la retransmisión, pausa cuando quieras y prepara cambios en el descanso.</p></div></article><article><b>03</b><div><h3>Piensa en varias temporadas</h3><p>Ficha, vende y renueva contratos. El potencial es un techo, no una promesa de crecimiento. Los jóvenes necesitan tiempo, minutos e instalaciones; los veteranos pierden atributos y se retiran. Los contratos expirados liberan al jugador al cerrar la temporada.</p></div></article><article><b>04</b><div><h3>Compite en Europa</h3><p>Siete países con tres divisiones, copas y supercopas. Las tres copas europeas tienen grupos y eliminatorias. Los dos últimos de cada división descienden y los dos primeros de la división inferior ascienden. La clasificación de la temporada decide las plazas europeas siguientes.</p></div></article><article><b>05</b><div><h3>Cuida tu carrera</h3><p>El juego guarda durante el partido y al terminar las jornadas. Hay tres ranuras con una copia anterior y archivos exportables. Instálalo desde tu navegador o usa el lanzador del repositorio para jugar sin conexión.</p></div></article></div><p class="hint">Super Soccer tiene diseño, código, arte y audio propios. Su universo de equipos y jugadores es ficticio; no representa una base de datos oficial ni reproduce todas las funciones de otro juego.</p>`;}
 function showOffers(){
   const eligible=world.teams.filter(t=>t.id!==world.userTeam).sort((a,b)=>teamRating(b)-teamRating(a));
   modal('TU SIGUIENTE DESTINO',`<h2>El banquillo puede cambiar. La historia sigue.</h2><p class="muted">Reputación ${world.reputation}/100. Los clubes exigen una reputación proporcional a su nivel. Cambiar de club conserva tu historial.</p><div class="club-offers">${eligible.map(t=>UI.button(`${badgeSVG(t,32)}<span>${e(t.name)}<small>${COUNTRIES.find(c=>c.id===t.country).name} · Media ${teamRating(t)}</small></span>${teamRating(t)>65+world.reputation*.3?'<small>No disponible</small>':'<b>Firmar →</b>'}`,`change-club-${t.id}`,'club-offer',teamRating(t)>65+world.reputation*.3?'disabled':'')).join('')}</div>`,{wide:true});
@@ -228,20 +285,21 @@ function showOffers(){
 
 async function action(a){
   audio.unlock();audio.play('click');
-  if(pendingMatch&&!game&&/^(buy-|sell-|renew-|upgrade-|invest-|youth$|lineup-|swap-|sign-offer-)/.test(a))throw new Error('Hay una simulación en curso. Termínala antes de modificar la plantilla o el club.');
+  if(pendingMatch&&!game&&/^(buy-|sell-|renew-|upgrade-|invest-|youth$|lineup-|swap-|sign-offer-|dispatch-scout|recruit-report|promote-academy-)/.test(a))throw new Error('Hay una simulación en curso. Termínala antes de modificar la plantilla o el club.');
   if(a==='close-modal'){closeModal();return;}
+  if(a.startsWith('press-answer-')){await answerPressConference(Number(a.slice(13)));return;}
   if(a.startsWith('nav-')){navigate(a.slice(4));return;}
   if(a==='help'||a==='match-help'){if(game&&game.state!=='HalfTime')game.paused=true;modal('GUÍA DE SUPER SOCCER',helpContent(),{wide:true});return;}
   if(a==='new'||/^new-\d$/.test(a)){newProject(a.split('-')[1]);return;}
   if(a==='start-career'||a==='start-career-confirmed'){await startCareer(a.endsWith('confirmed'));return;}
   if(a.startsWith('setup-mode-')){setup.mode=a.slice(11);updateSetupModal();return;}
   if(a.startsWith('setup-team-')){setup.teamId=a.slice(11);if(setup.opponent===setup.teamId)setup.opponent=previewTeams.find(t=>t.id!==setup.teamId).id;updateSetupModal();return;}
-  if(a==='quick-sim'){await quickSimulate();return;}
   if(a==='watch'||a==='matchday'){
     if(!world)return;
     if(!pendingMatch&&(world.weekDay??0)<6){await simulateWeek();return;}
     const f=nextFixture(world);if(f)beginMatch(world,f);else await runMatchday();return;
   }
+  if(a==='quick-sim'){await quickSimulate();return;}
   if(a==='matchday'){await runMatchday();return;}
   if(a==='save'){await save({notify:true});if(view==='saves')render();return;}
   if(a==='export'){checkpoint();download(`Super-Soccer-${world.season}-ranura-${slot}.json`,exportSave(world,pendingMatch));toast('Copia de la carrera exportada.');return;}
@@ -261,6 +319,34 @@ async function action(a){
   if(a.startsWith('swap-')){applySwap(a.slice(5));return;}
   if(a.startsWith('offer-')){offer(a.slice(6));return;}
   if(a==='inbox'){inbox();return;}
+  if(a==='dispatch-scout'){
+    const own=teamById(world,world.userTeam),country=document.getElementById('scout-country')?.value??own.country,position=document.getElementById('scout-position')?.value??'any';
+    const mission=dispatchScout(world,country,position);await save();render();toast(`Ojeador desplegado. El informe llegará en cuatro días.`);return;
+  }
+  if(a.startsWith('recruit-report-')&&!a.startsWith('recruit-report-confirm-')){
+    const report=(world.scoutingReports??[]).find(r=>r.id===a.slice(15));if(!report?.prospect)throw new Error('Este informe ya no ofrece un juvenil.');
+    confirm(`Fichar a ${report.prospect.name}`,`El juvenil entrará en la cantera del club por ${money(report.fee)}. Tendrá contrato de formación y podrá subir al primer equipo desde los 15 años.`,'Fichar en cantera',`recruit-report-confirm-${report.id}`);return;
+  }
+  if(a.startsWith('recruit-report-confirm-')){
+    const p=recruitAcademyProspect(world,a.slice(23));await save();closeModal(true);render();modal('NUEVO JUGADOR DE CANTERA',`${UI.playerCard(world,p,teamById(world,world.userTeam))}<div class="modal-actions">${UI.button('CONTINUAR','close-modal','btn primary')}</div>`,{wide:true});return;
+  }
+  if(a.startsWith('promote-academy-')){
+    const p=promoteAcademyPlayer(world,a.slice(16));await save();closeModal(true);render();modal('¡PROMESA ASCENDIDA!',`<div class="signing-show">${UI.portrait(p,teamById(world,world.userTeam))}<h2>${e(p.name)} SUBE AL PRIMER EQUIPO</h2><p>Con ${p.age} años, ya puede entrar en la convocatoria.</p>${UI.button('CONTINUAR','close-modal','btn primary')}</div>`,{wide:true});return;
+  }
+  if(a.startsWith('incoming-accept-')){
+    const decision=a.startsWith('incoming-accept-counter-')?'accept-counter':a.startsWith('incoming-accept-final-')?'accept-final':'accept-original';
+    const offerId=a.replace(/^incoming-accept-(counter-|final-)?/,'');
+    const p=answerIncomingOffer(world,offerId,decision),newClub=world.teams.find(t=>t.roster.some(player=>player.id===p.id));await save();closeModal(true);render();modal('VENTA CERRADA',`<div class="signing-show">${UI.portrait(p,newClub)}<h2>${e(p.name)} CAMBIA DE CLUB</h2><p>La operación se ha completado y el presupuesto de tu club se ha actualizado.</p>${UI.button('CONTINUAR','close-modal','btn primary')}</div>`,{wide:true});return;
+  }
+  if(a.startsWith('incoming-reject-')){answerIncomingOffer(world,a.slice(16),'reject');await save();closeModal(true);inbox();toast('Oferta rechazada.');return;}
+  if(a.startsWith('incoming-counter-')){
+    const id=a.slice(17),o=(world.offers??[]).find(x=>x.id===id);if(!o)throw new Error('No se encuentra la oferta.');
+    const value=Math.round(Math.max(o.fee+10_000,o.asking*1.12)/10_000)*10_000;
+    modal('CONTRAOFERTA AL CLUB',`<h2>Tu jugador, tus condiciones.</h2><p>${e(o.name)} · ${money(o.fee)} ofrecidos · ${money(teamById(world,o.buyerId)?.budget??0)} de presupuesto comprador.</p><label class="offer-input">NUEVO PRECIO<input id="incoming-counter-amount" type="number" min="${o.fee+10_000}" max="${teamById(world,o.buyerId)?.budget??0}" step="10000" value="${Math.min(value,teamById(world,o.buyerId)?.budget??value)}"></label><div class="modal-actions">${UI.button('ENVIAR CONTRAOFERTA',`send-incoming-counter-${id}`,'btn primary')}</div>`,{wide:true});return;
+  }
+  if(a.startsWith('send-incoming-counter-')){
+    const id=a.slice(22),amount=Number(document.getElementById('incoming-counter-amount')?.value);counterIncomingOffer(world,id,amount);await save();closeModal(true);render();toast('Contraoferta enviada. El club responderá en dos días.');return;
+  }
   if(a.startsWith('loan-')){offer(a.slice(5),'loan');return;}
   if(a.startsWith('send-transfer-')||a.startsWith('send-loan-')){
     const loan=a.startsWith('send-loan-'),id=a.slice(loan?10:14),fee=Number(document.getElementById('offer-amount')?.value);
@@ -271,12 +357,12 @@ async function action(a){
     const p=signOffer(world,a.slice(11));closeModal(true);await save();render();
     modal('¡FICHAJE CONFIRMADO!',`<div class="signing-show">${UI.portrait(p,teamById(world,world.userTeam))}<h2>¡BIENVENIDO, ${e(p.name)}!</h2><p>Ya forma parte de tu plantilla.</p>${UI.button('CONTINUAR','close-modal','btn primary')}</div>`);return;
   }
-  if(a.startsWith('buy-')){offer(a.slice(4));return;}
-  if(a.startsWith('sell-')&&!a.startsWith('sell-confirm-')){const {p,team}=findPlayer(a.slice(5));confirm(`Vender a ${p.name}`,`La mejor oferta de venta es ${money(Math.round(playerValue(p,team)*.82/10000)*10000)}. El jugador saldrá de tu plantilla y un club con presupuesto cubrirá el traspaso.`,'Aceptar oferta',`sell-confirm-${p.id}`);return;}
+  if(a.startsWith('buy-')){const p=buyPlayer(world,a.slice(4));closeModal(true);scheduleSave();render();toast(`${p.name} se incorpora al equipo.`);return;}
+  if(a.startsWith('sell-')&&!a.startsWith('sell-confirm-')){const {p,team}=findPlayer(a.slice(5));confirm(`Vender a ${p.name}`,`La mejor oferta de venta es ${money(Math.round(playerValue(p,team)*.9/10000)*10000)}. El jugador saldrá de tu plantilla y un club con presupuesto cubrirá el traspaso.`,'Aceptar oferta',`sell-confirm-${p.id}`);return;}
   if(a.startsWith('sell-confirm-')){const fee=sellPlayer(world,a.slice(13));closeModal(true);scheduleSave();render();toast(`Venta completada por ${money(fee)}.`);return;}
   if(a.startsWith('renew-')&&!a.startsWith('renew-confirm-')){const {p}=findPlayer(a.slice(6));confirm(`Renovar a ${p.name}`,`La prima de renovación cuesta ${money(wage(p)*12)}. Su contrato se ampliará dos temporadas, hasta un máximo de cinco.`,'Renovar contrato',`renew-confirm-${p.id}`);return;}
   if(a.startsWith('renew-confirm-')){renewPlayer(world,a.slice(14));closeModal(true);scheduleSave();render();toast('Contrato renovado.');return;}
-  if(a.startsWith('upgrade-')){const kind=a.slice(8),t=teamById(world,world.userTeam);confirm('Mejorar instalaciones',`La inversión cuesta ${money(t[kind]**2*1000000)} y aumenta un nivel la instalación.`,'Invertir',`invest-${kind}`);return;}
+  if(a.startsWith('upgrade-')){const kind=a.slice(8),t=teamById(world,world.userTeam);confirm('Mejorar instalaciones',`La inversión cuesta ${money(upgradeCost(t,kind))} y aumenta un nivel la instalación.`,'Invertir',`invest-${kind}`);return;}
   if(a.startsWith('invest-')){upgrade(world,a.slice(7));closeModal(true);scheduleSave();render();toast('Instalación mejorada.');return;}
   if(a==='youth'){const p=promoteYouth(world);unlockAchievements(world);scheduleSave();render();showPlayer(p.id);return;}
   if(a==='market-prev'||a==='market-next'){filters.page+=a.endsWith('next')?1:-1;render();return;}
@@ -301,21 +387,6 @@ async function action(a){
 document.addEventListener('click',ev=>{
   const button=ev.target.closest('[data-action]');if(button&&!button.disabled){ev.preventDefault();action(button.dataset.action).catch(error=>toast(error.message,true));}
   else if(ev.target.dataset.backdrop&&modalStack.at(-1)?.closable!==false)closeModal();
-});
-document.addEventListener('dragstart',ev=>{
-  const player=ev.target.closest('[data-drag-player]');if(!player||!ev.dataTransfer)return;
-  ev.dataTransfer.setData('text/plain',player.dataset.dragPlayer);ev.dataTransfer.effectAllowed='move';player.classList.add('dragging');
-});
-document.addEventListener('dragend',ev=>ev.target.closest('[data-drag-player]')?.classList.remove('dragging'));
-document.addEventListener('dragover',ev=>{
-  const target=ev.target.closest('[data-drop-player]');if(!target)return;
-  ev.preventDefault();if(ev.dataTransfer)ev.dataTransfer.dropEffect='move';target.classList.add('drop-target');
-});
-document.addEventListener('dragleave',ev=>ev.target.closest('[data-drop-player]')?.classList.remove('drop-target'));
-document.addEventListener('drop',ev=>{
-  const target=ev.target.closest('[data-drop-player]'),incoming=ev.dataTransfer?.getData('text/plain');
-  if(!target||!incoming)return;ev.preventDefault();target.classList.remove('drop-target');
-  try{applySwap(`${incoming}|${target.dataset.dropPlayer}`);}catch(error){toast(error.message,true);}
 });
 document.addEventListener('change',ev=>{
   const el=ev.target;
@@ -367,3 +438,4 @@ async function offlineSetup(){
 render();
 refreshSlots().then(render).catch(error=>toast(`No se pudieron leer los guardados: ${error.message}`,true));
 offlineSetup();
+
