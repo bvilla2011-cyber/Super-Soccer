@@ -6,22 +6,30 @@ const MAX_FILE=24*1024*1024;
 let dbPromise;
 function openDB() {
   if(dbPromise)return dbPromise;
-  dbPromise=new Promise((resolve,reject)=>{
-    if(!globalThis.indexedDB)return reject(new Error('IndexedDB no disponible'));
+  if(!globalThis.indexedDB)return Promise.reject(new Error('IndexedDB no disponible'));
+  let pending;
+  pending=new Promise((resolve,reject)=>{
+    let settled=false;
+    const fail=error=>{if(settled)return;settled=true;if(dbPromise===pending)dbPromise=null;reject(error);};
     const req=indexedDB.open('super-soccer-offline',1);
     req.onupgradeneeded=()=>req.result.createObjectStore('saves',{keyPath:'id'});
-    req.onsuccess=()=>{const db=req.result;db.onversionchange=()=>{db.close();dbPromise=null;};resolve(db);};req.onerror=()=>{dbPromise=null;reject(req.error);};
-    req.onblocked=()=>{dbPromise=null;reject(new Error('Cierra otras pestañas del juego para actualizar el guardado.'));};
+    req.onsuccess=()=>{if(settled){req.result.close();return;}settled=true;req.result.onversionchange=()=>{req.result.close();if(dbPromise===pending)dbPromise=null;};resolve(req.result);};
+    req.onerror=()=>fail(req.error);
+    req.onblocked=()=>fail(new Error('Cierra otras pestañas del juego para actualizar el guardado.'));
   });
-  return dbPromise;
+  dbPromise=pending;return pending;
+}
+function readFallback(id) {
+  try {const raw=globalThis.localStorage?.getItem(`super-soccer-save-${id}`);return raw?JSON.parse(raw):null;}
+  catch(error) {return null;}
 }
 async function readRecord(id) {
   try {
     const db=await openDB();const record=await new Promise((resolve,reject)=>{const req=db.transaction('saves').objectStore('saves').get(id);req.onsuccess=()=>resolve(req.result??null);req.onerror=()=>reject(req.error);});
-    let fallback=null;try{const raw=globalThis.localStorage?.getItem(`super-soccer-save-${id}`);fallback=raw?JSON.parse(raw):null;}catch(error){}
+    const fallback=readFallback(id);
     return (fallback?.current?.date??0)>(record?.current?.date??0)?fallback:record;
   } catch(error) {
-    const raw=globalThis.localStorage?.getItem(`super-soccer-save-${id}`);return raw?JSON.parse(raw):null;
+    return readFallback(id);
   }
 }
 async function writeRecord(record) {
@@ -70,9 +78,10 @@ export function validatePayload(payload) {
     assert(Array.isArray(t.colors)&&t.colors.length===2&&t.colors.every(c=>/^#[0-9a-f]{6}$/i.test(c)),'colores del club.');
     assert(finite(t.budget,-1e10,1e12)&&integer(t.division,1,3),'economía o división.');
     assert(Array.isArray(t.roster)&&t.roster.length>=1&&t.roster.length<=30,'plantilla.');
-    assert(Array.isArray(t.lineup)&&t.lineup.length<=11&&new Set(t.lineup).size===t.lineup.length,'alineación.');
-    assert(['2-1-1','1-2-1','1-1-2','4-4-2','4-3-3','4-2-3-1','3-5-2','3-4-3'].includes(t.formation)&&['balanced','attacking','defensive'].includes(t.tactic),'táctica.');
-    if(t.kits)assert(['home','away'].every(side=>t.kits[side]&&/^#[0-9a-f]{6}$/i.test(t.kits[side].primary)&&/^#[0-9a-f]{6}$/i.test(t.kits[side].secondary)&&['solid','halves','stripes','sash','hoops','diamonds'].includes(t.kits[side].pattern)),'equipaciones.');
+    if(t.happiness!==undefined)assert(finite(t.happiness,0,100),'felicidad del equipo.');
+    if(t.academyPlayers!==undefined){assert(Array.isArray(t.academyPlayers)&&t.academyPlayers.length<=24,'cantera.');for(const p of t.academyPlayers)validatePlayer(p,players);}
+    assert(Array.isArray(t.lineup)&&t.lineup.length<=5&&new Set(t.lineup).size===t.lineup.length,'alineación.');
+    assert(['2-1-1','1-2-1','1-1-2','4-4-2','3-5-2'].includes(t.formation)&&['balanced','attacking','defensive'].includes(t.tactic),'táctica.');
     assert(integer(t.academy,1,5)&&integer(t.trainingLevel,1,5)&&Array.isArray(t.honours)&&Array.isArray(t.form)&&t.form.length<=5&&t.form.every(f=>['V','E','D'].includes(f)),'instalaciones.');
     for(const p of t.roster)validatePlayer(p,players);
     assert(t.lineup.every(id=>t.roster.some(p=>p.id===id)),'alineación ajena a la plantilla.');
@@ -80,6 +89,12 @@ export function validatePayload(payload) {
   assert(teams.has(w.userTeam),'club del entrenador.');
   assert(Array.isArray(w.freeAgents)&&w.freeAgents.length<=200,'jugadores libres.');
   for(const p of w.freeAgents)validatePlayer(p,players);
+  assert(Array.isArray(w.offers??[])&&(w.offers??[]).length<=500,'buzón de fichajes.');
+  for(const offer of w.offers??[])assert(typeof offer.id==='string'&&typeof offer.playerId==='string'&&typeof offer.status==='string'&&typeof offer.unread==='boolean'&&(offer.direction===undefined||['incoming','outgoing'].includes(offer.direction)),'oferta de fichaje.');
+  assert(Array.isArray(w.scoutingMissions??[])&&(w.scoutingMissions??[]).length<=20,'expediciones de ojeo.');
+  for(const mission of w.scoutingMissions??[])assert(typeof mission.id==='string'&&typeof mission.country==='string'&&['any','POR','DEF','MED','DEL'].includes(mission.position)&&integer(mission.due,0,1e9),'expedición de ojeo.');
+  assert(Array.isArray(w.scoutingReports??[])&&(w.scoutingReports??[]).length<=30,'informes de ojeo.');
+  for(const report of w.scoutingReports??[]){assert(typeof report.id==='string'&&typeof report.country==='string'&&['available','signed','declined'].includes(report.status)&&finite(report.fee,0,1e10)&&typeof report.unread==='boolean','informe de ojeo.');if(report.prospect)validatePlayer(report.prospect,players);}
   assert(Array.isArray(w.events)&&w.events.length>0&&w.events.length<=150&&integer(w.eventIndex,0,w.events.length),'calendario.');
   assert(w.events.every(e=>typeof e.id==='string'&&typeof e.label==='string'&&['league','cup','europe','super'].includes(e.kind)&&integer(e.round,0,100)),'eventos.');
   assert(Array.isArray(w.competitions)&&w.competitions.length<=100,'competiciones.');
@@ -98,11 +113,12 @@ export function validatePayload(payload) {
   for(const name of ['news','history','finance','transferLog','trophies','achievements'])assert(Array.isArray(w[name])&&w[name].length<=500,name);
   assert(w.managerStats&&Object.values(w.managerStats).every(n=>finite(n,0,1e9)),'estadísticas del entrenador.');
   assert(finite(w.reputation,0,100)&&integer(w.nextPlayerId,1,1e9),'progresión.');
+  if(w.pendingPressConference){const press=w.pendingPressConference;assert(typeof press.fixtureId==='string'&&fixtureIds.has(press.fixtureId)&&['win','draw','loss'].includes(press.result)&&Array.isArray(press.questions)&&press.questions.length===4&&integer(press.index,0,4),'rueda de prensa.');for(const question of press.questions){assert(typeof question.text==='string'&&Array.isArray(question.answers)&&question.answers.length===3&&(question.target===null||typeof question.target==='string'),'pregunta de prensa.');for(const answer of question.answers)assert(typeof answer.text==='string'&&finite(answer.teamDelta,-10,10)&&finite(answer.playerDelta,-10,10),'respuesta de prensa.');}}
   if(payload.match) {
     const m=payload.match;
-    assert(typeof m.fixtureId==='string'&&fixtureIds.has(m.fixtureId)&&m.snapshot&&Array.isArray(m.snapshot.players)&&m.snapshot.players.length<=22,'partido en curso.');
+    assert(typeof m.fixtureId==='string'&&fixtureIds.has(m.fixtureId)&&m.snapshot&&Array.isArray(m.snapshot.players)&&m.snapshot.players.length<=20,'partido en curso.');
     assert(Array.isArray(m.snapshot.score)&&m.snapshot.score.length===2&&m.snapshot.score.every(n=>integer(n,0,99))&&finite(m.snapshot.clock,0,6000),'marcador en curso.');
-    assert(['Kickoff','InPlay','Action','HalfTime','FullTime','Shootout','Exit'].includes(m.snapshot.state),'estado de partido.');
+    assert(['Entrance','Kickoff','InPlay','Action','HalfTime','FullTime','Shootout'].includes(m.snapshot.state),'estado de partido.');
     assert(m.snapshot.players.every(p=>p&&typeof p.id==='string'&&finite(p.x,-1000,3000)&&finite(p.y,-1000,3000)&&finite(p.vx,-3000,3000)&&finite(p.vy,-3000,3000)),'posiciones en curso.');
     assert(integer(m.snapshot.rngState,0,4294967295)&&integer(m.snapshot.half,1,2)&&finite(m.snapshot.duration,60,600)&&finite(m.snapshot.elapsed,0,1e7)&&finite(m.snapshot.stateTime,0,1e7),'reloj en curso.');
     assert(m.snapshot.firstHalf&&Array.isArray(m.snapshot.firstHalf.events)&&Array.isArray(m.snapshot.firstHalf.score)&&m.snapshot.firstHalf.players&&m.snapshot.firstHalf.stats,'primera parte en curso.');
@@ -164,7 +180,8 @@ export function importSave(text) {
   try{const payload=unpack(JSON.parse(text));payload.economyMigrated=rebaseCareerEconomy(payload.world);return payload;}catch(error){if(error instanceof SyntaxError)throw new Error('El archivo no contiene una partida JSON válida.');throw error;}
 }
 export function getSettings() {
-  const defaults={sound:true,music:true,volume:.32,duration:180,offside:false,quality:'high',reducedMotion:false,autoSwitch:true};
+  const defaults={sound:true,music:false,volume:.45,duration:180,offside:false,quality:'high',reducedMotion:false,autoSwitch:true};
   try {const s=JSON.parse(localStorage.getItem('super-soccer-settings')??'{}');return {...defaults,...s,duration:[120,180,300].includes(s.duration)?s.duration:180,volume:Math.max(0,Math.min(1,Number(s.volume??.45)||0))};}catch(e){return defaults;}
 }
 export function setSettings(settings) {try {localStorage.setItem('super-soccer-settings',JSON.stringify(settings));}catch(e){}}
+
