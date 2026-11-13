@@ -1,4 +1,4 @@
-import { COUNTRIES, ECONOMY_VERSION, MARKET_REFERENCE_AVERAGES_V2, createTeams, teamById, countryById, teamRating, overall, makePlayer, playerValue, initialTransferBudget, wage, emptyStats, activePlayers, upgradeTeamRoster } from './data.js';
+import { COUNTRIES, ECONOMY_VERSION, MARKET_REFERENCE_AVERAGES_V2, createTeams, teamById, countryById, teamRating, overall, makePlayer, playerValue, initialTransferBudget, wage, emptyStats, activePlayers } from './data.js';
 import { random, shuffle, clamp, clone } from './utils.js';
 import { roundRobin, standings, knockoutPairs, knockoutLabel } from './competitions.js';
 import { simulateMatch, scorerTable } from './simulation.js';
@@ -12,33 +12,47 @@ export function news(world,title,body='',type='club') {
 export function createCareer({teamId='es-2',manager='Míster',difficulty='club',seed=Date.now(),mode='career'}={}) {
   const created=createTeams(seed);
   if(!created.teams.some(t=>t.id===teamId)) throw new Error('Club desconocido.');
-  const world={version:SAVE_VERSION,economyVersion:ECONOMY_VERSION,seed:seed>>>0,rngState:created.rngState,season:2026,userTeam:teamId,manager:String(manager).slice(0,32)||'Míster',difficulty,mode,teams:created.teams,freeAgents:[],fixtures:[],competitions:[],events:[],eventIndex:0,day:0,weekDay:0,offers:[],seasonComplete:false,news:[],history:[],finance:[],transferLog:[],trophies:[],reputation:20,managerStats:{matches:0,wins:0,draws:0,losses:0,goals:0,against:0,simulated:0,played:0},trainingFocus:'balanced',created:Date.now(),updated:Date.now(),achievements:[],nextPlayerId:1};
+  const world={version:SAVE_VERSION,economyVersion:ECONOMY_VERSION,rosterVersion:2,featuresVersion:2,seed:seed>>>0,rngState:created.rngState,season:2026,userTeam:teamId,manager:String(manager).slice(0,32)||'Míster',difficulty,mode,teams:created.teams,freeAgents:[],fixtures:[],competitions:[],events:[],eventIndex:0,day:0,weekDay:0,offers:[],scoutingMissions:[],scoutingReports:[],pendingPressConference:null,scoutSequence:1,seasonComplete:false,news:[],history:[],finance:[],transferLog:[],trophies:[],reputation:20,managerStats:{matches:0,wins:0,draws:0,losses:0,goals:0,against:0,simulated:0,played:0},trainingFocus:'balanced',created:Date.now(),updated:Date.now(),achievements:[],nextPlayerId:1};
   withRandom(world,rng=>{for(let i=0;i<30;i++)world.freeAgents.push(makePlayer(rng,`free-${world.nextPlayerId++}`,rng.int(58,82),rng.pick(['POR','DEF','MED','DEL'])));});
   setupSeason(world);
-  news(world,`Empieza tu historia en ${teamById(world,teamId).name}`,`La directiva confía en ${world.manager}. Prepara el once titular, planifica los fichajes y dirige al equipo desde el banquillo.`);
+  news(world,`Empieza tu historia en ${teamById(world,teamId).name}`,`La directiva confía en ${world.manager}. Prepara el cinco titular, planifica los fichajes y dirige al equipo desde el banquillo.`);
   return world;
 }
 export function rebaseCareerEconomy(world) {
   if(!world)return false;
-  const previousVersion=world.economyVersion??0,baselines=new Map();let migrated=previousVersion<ECONOMY_VERSION;
-  for(const team of world.teams??[]) {
-    if(previousVersion<ECONOMY_VERSION&&Number.isFinite(team.budget)) {
-      const selected=(team.lineup??[]).map(id=>team.roster?.find(p=>p.id===id)).filter(Boolean);
-      const legacyRating=selected.length?selected.reduce((sum,p)=>sum+overall(p),0)/selected.length:teamRating(team);
-      const oldTarget=previousVersion===2?initialTransferBudget(team,MARKET_REFERENCE_AVERAGES_V2):previousVersion>=3?initialTransferBudget(team):Math.max(100_000,(Math.max(50,legacyRating)-50)**3*3_500);
-      baselines.set(team.id,Math.max(100_000,oldTarget));
-    }
-    if(upgradeTeamRoster(team))migrated=true;
-  }
+  let changed=false;
+  const previousVersion=world.economyVersion??0;
   if(previousVersion<ECONOMY_VERSION) {
-    for(const team of world.teams??[])if(Number.isFinite(team.budget)) {
-      const before=baselines.get(team.id)??Math.max(100_000,initialTransferBudget(team));
-      const current=Math.max(100_000,initialTransferBudget(team));
-      team.budget=Math.round(team.budget*current/before/10_000)*10_000;
+    for(const team of world.teams??[]) {
+      if(!Number.isFinite(team.budget))continue;
+      if(previousVersion>=2) {
+        const previousAverages=previousVersion===2?MARKET_REFERENCE_AVERAGES_V2:MARKET_REFERENCE_AVERAGES;
+        const previousBudget=Math.max(100_000,initialTransferBudget(team,previousAverages,1.195));
+        team.budget=Math.round(team.budget*initialTransferBudget(team)/previousBudget/10_000)*10_000;
+      } else {
+        const rating=Math.max(50,teamRating(team));
+        const legacyBudget=Math.max(100_000,(rating-50)**3*3_500);
+        team.budget=Math.round(team.budget*initialTransferBudget(team)/legacyBudget/10_000)*10_000;
+      }
     }
-    world.economyVersion=ECONOMY_VERSION;migrated=true;
+    world.economyVersion=ECONOMY_VERSION;
+    changed=true;
   }
-  return migrated;
+  if((world.rosterVersion??0)<2) {
+    const known=new Set((world.teams??[]).map(team=>team.id));
+    const generated=createTeams(world.seed??world.rngState).teams;
+    for(const team of generated)if(!known.has(team.id)){world.teams.push(team);known.add(team.id);}
+    world.rosterVersion=2;
+    changed=true;
+  }
+  if((world.featuresVersion??0)<2) {
+    for(const team of world.teams??[]) {
+      team.happiness=Number.isFinite(team.happiness)?team.happiness:65;
+      team.academyPlayers??=[];
+    }
+    world.scoutingMissions??=[];world.scoutingReports??=[];world.pendingPressConference??=null;world.scoutSequence??=1;world.featuresVersion=2;changed=true;
+  }
+  return changed;
 }
 
 function fixture(world,comp,event,round,home,away,stage='league',group=null) {
@@ -58,7 +72,7 @@ export function setupSeason(world) {
       const comp={id:`${c.id}-${div}`,name:div===1?c.league:div===2?c.second:`${c.second} · Tercera`,kind:'league',country:c.id,division:div,teamIds:ids};world.competitions.push(comp);
       roundRobin(ids).forEach((games,r)=>games.forEach(([a,b])=>fixture(world,comp,{id:`league-${r}`},r,a,b)));
     }
-    const cup={id:`${c.id}-cup`,name:c.cup,kind:'cup',country:c.id,teamIds:world.teams.filter(t=>t.country===c.id&&t.division<=2).map(t=>t.id),rounds:5,prepared:[]};world.competitions.push(cup);
+    const cup={id:`${c.id}-cup`,name:c.cup,kind:'cup',country:c.id,teamIds:world.teams.filter(t=>t.country===c.id).map(t=>t.id),rounds:5,prepared:[]};world.competitions.push(cup);
     const history=world.history.at(-1); const ranking=history?.tables?.[`${c.id}-1`]?.map(r=>r.id)??world.teams.filter(t=>t.country===c.id&&t.division===1).sort((a,b)=>teamRating(b)-teamRating(a)).map(t=>t.id);
     const formerCup=history?.winners?.[`${c.id}-cup`];
     const opponent=formerCup&&formerCup!==ranking[0]?formerCup:ranking[1];
@@ -137,15 +151,23 @@ function applyResult(world,f,result,rng) {
   if(f.score)throw new Error('El partido ya tiene resultado.');
   if(!validResult(result))throw new Error('Resultado inválido.');
   Object.assign(f,clone(result));
+  const competition=world.competitions.find(c=>c.id===f.competition);
+  const leagueLeaders=competition?.kind==='league'?standings(world,competition.id).slice(0,4).map(row=>row.id):[];
+  const highStakes=['cup','europe','super'].includes(competition?.kind)||(competition?.kind==='league'&&[f.home,f.away].filter(id=>id!==world.userTeam).some(id=>leagueLeaders.includes(id)));
   [f.home,f.away].forEach((id,side)=>{
     const t=teamById(world,id);const win=f.score[side]>f.score[1-side];const draw=f.score[0]===f.score[1];
+    const previousForm=t.form.slice(-2),streak=win&&previousForm.length===2&&previousForm.every(x=>x==='V') ? .8 : !win&&!draw&&previousForm.length===2&&previousForm.every(x=>x==='D') ? -1 : 0;
+    const difficultyScale={rookie:.8,club:1,legend:1.2}[world.difficulty]??1;
+    const outcomeDelta=(win?2:draw?0:-2.4)+streak+(highStakes?(win ? .7 : draw ? 0 : -.7):0);
+    t.happiness=clamp((t.happiness??65)+outcomeDelta*difficultyScale,20,90);
     t.form.push(win?'V':draw?'E':'D');t.form=t.form.slice(-5);
     const played=new Set(Object.keys(f.players??{}));
     for(const p of t.roster) {
       if(p.injury>0)p.injury--;if(p.ban>0)p.ban--;
       const s=f.players?.[p.id];
       p.fitness=clamp(p.fitness+(s?-rng.int(5,13):15),10,100);
-      p.morale=clamp(p.morale+(win?4:draw?0:-3)+(s?1:-1),20,100);
+      const minutes=s?.minutes??0,usageDelta=minutes>=30 ? 0.7 : minutes>0 ? 0 : -0.7,performanceDelta=s?clamp(((s.rating??6.5)-6.5)*.3,-0.75,0.75):0;
+      p.morale=clamp(p.morale+((win?3:draw?0:-2.4)+usageDelta+performanceDelta)*difficultyScale,15,100);
       if(!s)continue;
       for(const key of ['minutes','goals','assists','shots','saves','yellow','red','rating']) {p.stats[key]+=(s[key]??0);p.career[key]+=(s[key]??0);}
       p.stats.matches++;p.career.matches++;p.form=Math.round((p.form*.65+(s.rating??6.5)*.35)*10)/10;
@@ -170,6 +192,29 @@ function applyResult(world,f,result,rng) {
 }
 export function validResult(r) {
   return r&&Array.isArray(r.score)&&r.score.length===2&&r.score.every(n=>Number.isInteger(n)&&n>=0&&n<100)&&(!r.pens||(Array.isArray(r.pens)&&r.pens.length===2&&r.pens.every(n=>Number.isInteger(n)&&n>=0&&n<100)));
+}
+
+export function isImportantFixture(world,f) {
+  if(!f||!f.away)return false;
+  const comp=world.competitions.find(c=>c.id===f.competition);
+  if(!comp)return false;
+  if(['cup','europe','super'].includes(comp.kind))return true;
+  if(comp.kind!=='league')return false;
+  const opponent=f.home===world.userTeam?f.away:f.home;
+  return standings(world,comp.id).slice(0,4).some(row=>row.id===opponent);
+}
+export function createPressConference(world,f) {
+  const own=teamById(world,world.userTeam),side=f.home===world.userTeam?0:1,opponent=teamById(world,side===0?f.away:f.home),scored=f.score[side],conceded=f.score[1-side],result=scored>conceded?'win':scored<conceded?'loss':'draw';
+  const playerRows=Object.entries(f.players??{}).filter(([id])=>own.roster.some(p=>p.id===id)).map(([id,stats])=>({player:own.roster.find(p=>p.id===id),rating:stats.rating??6})).filter(row=>row.player);
+  const sorted=[...playerRows].sort((a,b)=>b.rating-a.rating),best=sorted[0]?.player??activePlayers(own)[0],weakest=[...sorted].reverse().find(row=>row.player?.id!==best?.id)?.player??best;
+  const choices=(items)=>items.map(([text,teamDelta=0,playerDelta=0])=>({text,teamDelta,playerDelta}));
+  const questions=[
+    {target:null,text:result==='win'?`¿Qué explica el triunfo ante ${opponent.short}?`:result==='loss'?`¿Cómo explicas la derrota ante ${opponent.short}?`:`¿Te conforma el empate ante ${opponent.short}?`,answers:choices(result==='win'?[['El grupo compitió con personalidad.',1],['El plan funcionó; hay que repetirlo.',0],['Celebramos hoy y mañana volvemos al trabajo.',0]]:result==='loss'?[['Asumo mi parte y protegeré al vestuario.',1],['Corregiremos los errores juntos.',0],['El equipo debe exigirse más.',-1]]:[['El punto sirve, pero queríamos ganar.',0],['La plantilla compitió bien.',1],['Tenemos que ser más valientes.',-1]])},
+    {target:best?.id??null,text:best?`¿Qué mensaje le das a ${best.name} después de su actuación?`:'¿Qué mensaje le das al equipo?',answers:choices(result==='win'?[['Ha sido importante; sigue así.',1,2],['El mérito es de todo el equipo.',1,1],['No te relajes, queda mucho.',0,-1]]:result==='loss'?[['Confío en ti; saldremos juntos.',1,2],['Aprenderemos del partido.',0,1],['Espero una respuesta en el próximo encuentro.',-1,-2]]:[['Buen trabajo, mantén el nivel.',1,1],['El equipo está por delante de cualquier nombre.',0,0],['Hay detalles que debes mejorar.',-1,-1]])},
+    {target:null,text:result==='win'?'¿Puede este equipo mantener el impulso?':result==='loss'?'¿Cómo recuperará la confianza el vestuario?':'¿Qué debe cambiar para ganar el próximo partido?',answers:choices(result==='win'?[['Con trabajo y sin perder la humildad.',1],['Nos centraremos en el siguiente rival.',0],['La confianza debe ganarse cada semana.',0]]:result==='loss'?[['Seguiremos unidos y entrenaremos mejor.',1],['Los líderes ayudarán al grupo.',0],['Cada jugador debe responder en el campo.',-1]]:[['Afinaremos la toma de decisiones.',1],['No hacen falta grandes cambios.',0],['Necesitamos más intensidad.',-1]])},
+    {target:weakest?.id??null,text:weakest?`¿Qué esperas de ${weakest.name} a partir de ahora?`:'¿Qué esperas del grupo en el próximo partido?',answers:choices(result==='win'?[['Que mantenga los pies en el suelo.',0,1],['Tiene mi confianza.',1,1],['La competencia por el puesto sigue abierta.',0,-1]]:result==='loss'?[['Le daré apoyo y una nueva oportunidad.',1,2],['Debe trabajar los errores con el cuerpo técnico.',0,0],['Hoy le faltó nivel.',-1,-2]]:[['Tiene margen para dar más.',0,0],['Cuenta con mi respaldo.',1,1],['El siguiente partido será una prueba.',0,-1]])}
+  ];
+  return {fixtureId:f.id,result,index:0,questions};
 }
 
 export function advance(world,manualResult=null) {
@@ -217,8 +262,8 @@ function developPlayers(world,rng) {
 function aiTransfers(world,rng) {
   if(!transferOpen(world))return;
   for(let i=0;i<5;i++) {
-    const target=rng.pick(world.teams.filter(t=>t.id!==world.userTeam&&t.roster.length<30));if(!target)continue;
-    const source=rng.pick(world.teams.filter(t=>t.id!==world.userTeam&&t.id!==target.id&&t.roster.length>11));if(!source)continue;
+    const target=rng.pick(world.teams.filter(t=>t.id!==world.userTeam&&t.roster.length<16));if(!target)continue;
+    const source=rng.pick(world.teams.filter(t=>t.id!==world.userTeam&&t.id!==target.id&&t.roster.length>9));if(!source)continue;
     const p=rng.pick(source.roster.filter(p=>!p.loan&&!source.lineup.includes(p.id)&&p.position!=='POR'));
     if(!p)continue;const fee=transferPrice(p,source,target);
     if(target.budget<fee||overall(p)<teamRating(target)-7)continue;
@@ -228,19 +273,19 @@ function aiTransfers(world,rng) {
   world.transferLog=world.transferLog.slice(0,80);
 }
 export function transferPrice(p,source,target) {
-  if(!source)return Math.max(10_000,Math.round(playerValue(p,target)*.12/10_000)*10_000);
+  if(!source)return Math.max(10_000,Math.round(playerValue(p,target)*.2/10_000)*10_000);
   return Math.round(playerValue(p,source)*(source.lineup.includes(p.id)?1.15:1)*(p.contract<=1?.83:1)*(target&&source.country!==target.country?1.03:1)/10_000)*10_000;
 }
 const freeNumber=t=>{for(let n=2;n<100;n++)if(!t.roster.some(p=>p.number===n))return n;return 99;};
 export function buyPlayer(world,playerId,agreedFee=null,loan=false) {
   if(!transferOpen(world))throw new Error('El mercado está cerrado. Abre al inicio y a mitad de temporada.');
-  const own=teamById(world,world.userTeam);if(own.roster.length>=30)throw new Error('La plantilla admite 30 jugadores. Vende o cede una plaza.');
+  const own=teamById(world,world.userTeam);if(own.roster.length>=20)throw new Error('La plantilla admite 20 jugadores. Vende o cede una plaza.');
   const source=world.teams.find(t=>t.id!==own.id&&t.roster.some(p=>p.id===playerId));
   const p=source?.roster.find(p=>p.id===playerId)??world.freeAgents.find(p=>p.id===playerId);
   if(!p)throw new Error('El jugador ya no está disponible.');
   if(p.loan)throw new Error('Este jugador ya está cedido.');
   if(loan&&!source)throw new Error('Los agentes libres no pueden llegar cedidos.');
-  if(source&&(source.roster.length<=11||(p.position==='POR'&&source.roster.filter(x=>x.position==='POR').length<=1)))throw new Error('El club vendedor no acepta perder otro jugador en esa posición.');
+  if(source&&(source.roster.length<=8||(p.position==='POR'&&source.roster.filter(x=>x.position==='POR').length<=1)))throw new Error('El club vendedor no acepta perder otro jugador en esa posición.');
   const fee=agreedFee??transferPrice(p,source,own);if(!Number.isFinite(fee)||fee<0||own.budget<fee)throw new Error('Presupuesto insuficiente para este fichaje.');
   if(source){source.roster=source.roster.filter(x=>x!==p);source.lineup=source.lineup.filter(id=>id!==p.id);source.budget+=fee;}
   else world.freeAgents=world.freeAgents.filter(x=>x!==p);
@@ -253,12 +298,13 @@ export function sellPlayer(world,playerId) {
   const own=teamById(world,world.userTeam),p=own.roster.find(p=>p.id===playerId);
   if(!p)throw new Error('Jugador desconocido.');
   if(p.loan)throw new Error('Un jugador cedido no se puede vender.');
-  if(own.roster.length<=11)throw new Error('Necesitas conservar once jugadores para disputar los partidos.');
+  if(own.roster.length<=8)throw new Error('Necesitas al menos ocho jugadores.');
   if(p.position==='POR'&&own.roster.filter(x=>x.position==='POR').length<=1)throw new Error('Necesitas conservar un portero.');
-  const fee=Math.round(playerValue(p,own)*.82/10000)*10000;
-    const buyer=world.teams.filter(t=>t.id!==own.id&&t.roster.length<30&&t.budget>=fee).sort((a,b)=>Math.abs(teamRating(a)-overall(p))-Math.abs(teamRating(b)-overall(p)))[0];
+  const fee=Math.round(playerValue(p,own)*.9/10000)*10000;
+  const buyer=world.teams.filter(t=>t.id!==own.id&&t.roster.length<20&&t.budget>=fee).sort((a,b)=>Math.abs(teamRating(a)-overall(p))-Math.abs(teamRating(b)-overall(p)))[0];
   if(!buyer)throw new Error('No hay un club comprador con presupuesto.');
   own.roster=own.roster.filter(x=>x!==p);own.lineup=own.lineup.filter(id=>id!==p.id);own.budget+=fee;buyer.budget-=fee;buyer.roster.push(p);p.number=freeNumber(buyer);p.contract=3;
+  for(const offer of world.offers??[])if(offer.direction==='incoming'&&offer.playerId===p.id&&['incoming','countered','counter-accepted','counter-rejected'].includes(offer.status)){offer.status='unavailable';offer.unread=true;}
   world.transferLog.unshift({name:p.name,from:own.name,to:buyer.name,fee,season:world.season,event:world.eventIndex});world.transferLog=world.transferLog.slice(0,80);
   addFinance(world,`Venta: ${p.name}`,fee);news(world,`${p.name} ficha por ${buyer.name}`,'La operación se ha completado.','transfer');return fee;
 }
@@ -267,12 +313,59 @@ export function renewPlayer(world,id) {
   const fee=wage(p)*12;if(t.budget<fee)throw new Error('No hay presupuesto para la prima.');
   if(p.contract>=5)throw new Error('Ya tiene el contrato máximo.');t.budget-=fee;p.contract=Math.min(5,p.contract+2);p.morale=clamp(p.morale+8,0,100);addFinance(world,`Renovación: ${p.name}`,-fee);
 }
+export function upgradeCost(team,kind) {
+  if(!['academy','trainingLevel'].includes(kind))throw new Error('Mejora desconocida.');
+  return team[kind]**2*(kind==='academy'?3_500_000:2_500_000);
+}
 export function upgrade(world,kind) {
   const t=teamById(world,world.userTeam);if(!['academy','trainingLevel'].includes(kind))throw new Error('Mejora desconocida.');
-  if(t[kind]>=5)throw new Error('Instalación al máximo.');const cost=t[kind]*t[kind]*1000000;if(t.budget<cost)throw new Error('Presupuesto insuficiente.');t.budget-=cost;t[kind]++;addFinance(world,'Mejora de instalaciones',-cost);return cost;
+  if(t[kind]>=5)throw new Error('Instalación al máximo.');const cost=upgradeCost(t,kind);if(t.budget<cost)throw new Error('Presupuesto insuficiente.');t.budget-=cost;t[kind]++;addFinance(world,'Mejora de instalaciones',-cost);return cost;
+}
+export function scoutDeploymentCost(team) {return 120_000+team.academy*85_000;}
+export function scoutCapacity(team) {return Math.min(3,1+Math.floor((team.academy-1)/2));}
+export function youthRecruitmentFee(player) {return Math.round((80_000+Math.max(0,player.potential-58)**2*1_500)/10_000)*10_000;}
+export function dispatchScout(world,country,position='any') {
+  const team=teamById(world,world.userTeam),active=(world.scoutingMissions??[]).length;
+  if(!COUNTRIES.some(c=>c.id===country))throw new Error('Elige una región válida para el ojeador.');
+  if(!['any','POR','DEF','MED','DEL'].includes(position))throw new Error('Elige una posición válida.');
+  if(active>=scoutCapacity(team))throw new Error('No tienes ojeadores disponibles. Mejora la cantera para desplegar más.');
+  const cost=scoutDeploymentCost(team);if(team.budget<cost)throw new Error('No hay presupuesto para desplegar al ojeador.');
+  team.budget-=cost;addFinance(world,'Despliegue de ojeador',-cost);
+  const mission={id:`scout-${world.season}-${world.day}-${world.scoutSequence++}`,country,position,cost,starts:world.day,due:world.day+4};
+  world.scoutingMissions.push(mission);news(world,'Un ojeador sale de viaje',`Buscará talento sub-18 en ${countryById(country)?.name??country}. Informe previsto en cuatro días.`,'youth');return mission;
+}
+export function resolveScoutingMissions(world) {
+  const due=(world.scoutingMissions??[]).filter(m=>m.due<=world.day);if(!due.length)return [];
+  const own=teamById(world,world.userTeam),reports=[];
+  for(const mission of due) {
+    const report=withRandom(world,rng=>{
+      const position=mission.position==='any'?rng.pick(['POR','DEF','MED','DEL']):mission.position;
+      const prospect=makePlayer(rng,`academy-${world.nextPlayerId++}`,rng.int(44,60)+own.academy*2,position);
+      prospect.age=rng.int(15,17);prospect.potential=clamp(overall(prospect)+rng.int(12,23)+own.academy*2,overall(prospect),99);prospect.morale=68;prospect.contract=0;
+      return {id:`report-${mission.id}`,country:mission.country,position,prospect,fee:youthRecruitmentFee(prospect),status:'available',unread:true,arrived:world.day,note:`Ha destacado en ${countryById(mission.country)?.name??mission.country}.`};
+    });
+    reports.push(report);world.scoutingReports.unshift(report);news(world,`Informe de cantera: ${report.prospect.name}`,`${report.prospect.age} años · ${report.position} · Potencial ${report.prospect.potential}. El informe está en el buzón.`,'youth');
+  }
+  world.scoutingMissions=world.scoutingMissions.filter(m=>m.due>world.day);world.scoutingReports=world.scoutingReports.slice(0,30);return reports;
+}
+export function recruitAcademyProspect(world,reportId) {
+  const team=teamById(world,world.userTeam),report=(world.scoutingReports??[]).find(r=>r.id===reportId);
+  if(!report||report.status!=='available'||!report.prospect)throw new Error('Este informe ya no ofrece un juvenil para fichar.');
+  if(team.academyPlayers.length>=24)throw new Error('La cantera tiene sus 24 plazas ocupadas.');
+  if(team.budget<report.fee)throw new Error('No hay presupuesto para fichar a este juvenil.');
+  const player=report.prospect;report.prospect=null;report.playerId=player.id;report.status='signed';report.unread=false;
+  player.number=0;player.contract=3;team.academyPlayers.push(player);team.budget-=report.fee;addFinance(world,`Fichaje de cantera: ${player.name}`,-report.fee);
+  news(world,`${player.name} se incorpora a la cantera`,`${player.age} años · ${player.position} · Potencial ${player.potential}.`,'youth');return player;
+}
+export function promoteAcademyPlayer(world,playerId) {
+  const team=teamById(world,world.userTeam),index=team.academyPlayers.findIndex(p=>p.id===playerId),player=team.academyPlayers[index];
+  if(!player)throw new Error('No se encuentra en la cantera.');
+  if(player.age<15)throw new Error('Solo se puede ascender al primer equipo a partir de los 15 años.');
+  if(team.roster.length>=20)throw new Error('La plantilla del primer equipo ya tiene 20 jugadores.');
+  team.academyPlayers.splice(index,1);player.number=freeNumber(team);player.contract=5;team.roster.push(player);team.youthSeason=world.season;news(world,`${player.name} sube al primer equipo`,`Con ${player.age} años, da el salto desde la cantera.`,'youth');unlockAchievements(world);return player;
 }
 export function promoteYouth(world) {
-  const t=teamById(world,world.userTeam);if(t.youthSeason===world.season)throw new Error('Ya has ascendido a la promesa de esta temporada.');if(t.roster.length>=30)throw new Error('No quedan plazas en la plantilla.');
+  const t=teamById(world,world.userTeam);if(t.youthSeason===world.season)throw new Error('Ya has ascendido a la promesa de esta temporada.');if(t.roster.length>=20)throw new Error('No quedan plazas en la plantilla.');
   const p=withRandom(world,rng=>{const p=makePlayer(rng,`youth-${world.nextPlayerId++}`,rng.int(45,58)+t.academy*3,rng.pick(['POR','DEF','MED','DEL']));p.age=17;p.potential=clamp(overall(p)+rng.int(10,19)+t.academy*2,overall(p),97);return p;});
   p.number=freeNumber(t);p.contract=5;t.roster.push(p);t.youthSeason=world.season;news(world,`La cantera presenta a ${p.name}`,`${p.age} años, posición ${p.position}. Su historia acaba de empezar.`,'youth');return p;
 }
@@ -317,6 +410,7 @@ export function nextSeason(world) {
   const existingFreeAgents=new Set(world.freeAgents.map(p=>p.id));
   withRandom(world,rng=>{
     for(const t of world.teams) {
+      for(const youth of t.academyPlayers??[])youth.age++;
       const leaving=[];
       for(const p of t.roster) {
         p.age++;p.contract--;p.stats=emptyStats();p.fitness=100;p.injury=0;p.ban=0;p.yellows=0;
@@ -329,16 +423,9 @@ export function nextSeason(world) {
         p.potential=Math.max(overall(p),p.potential-(p.age>31?1:0));
       }
       t.roster=t.roster.filter(p=>!leaving.includes(p));t.lineup=t.lineup.filter(id=>t.roster.some(p=>p.id===id));
-      const depth={POR:3,DEF:8,MED:8,DEL:6};
-      for(const role of ['POR','DEF','MED','DEL'])while(t.roster.filter(p=>p.position===role).length<depth[role]) {
-        const p=makePlayer(rng,`regen-${world.nextPlayerId++}`,rng.int(49,65)+t.academy*2,role);p.age=rng.int(17,20);p.potential=clamp(overall(p)+rng.int(8,21),overall(p),97);p.number=freeNumber(t);t.roster.push(p);
+      while(t.roster.length<10||!t.roster.some(p=>p.position==='POR')) {
+        const p=makePlayer(rng,`regen-${world.nextPlayerId++}`,rng.int(49,65)+t.academy*2,!t.roster.some(p=>p.position==='POR')?'POR':rng.pick(['DEF','MED','DEL']));p.age=rng.int(17,20);p.potential=clamp(overall(p)+rng.int(8,21),overall(p),97);p.number=freeNumber(t);t.roster.push(p);
       }
-      const preferred=t.lineup.map(id=>t.roster.find(p=>p.id===id)).filter(Boolean),xi=[];
-      for(const [role,count] of [['POR',1],['DEF',4],['MED',4],['DEL',2]]) {
-        const choices=[...preferred.filter(p=>p.position===role),...t.roster.filter(p=>p.position===role&&!preferred.includes(p)).sort((a,b)=>overall(b)-overall(a))];
-        for(const p of choices.slice(0,count))if(!xi.includes(p))xi.push(p);
-      }
-      t.lineup=xi.map(p=>p.id);t.formation='4-4-2';
       t.budget+=t.division===1?4_000_000:t.division===2?900_000:450_000;t.form=[];
     }
     for(const p of world.freeAgents){if(existingFreeAgents.has(p.id))p.age++;p.contract=0;p.fitness=100;p.injury=0;p.ban=0;p.stats=emptyStats();if(p.age>30)for(const k of Object.keys(p.attributes))p.attributes[k]=clamp(p.attributes[k]-rng.int(0,2),15,97);p.potential=Math.max(overall(p),p.potential-(p.age>31?1:0));}
@@ -367,3 +454,4 @@ export const ACHIEVEMENTS=[
   ['legend','Míster leyenda','Alcanza reputación 80.',w=>w.reputation>=80]
 ];
 export function unlockAchievements(world) {for(const [id,,,test] of ACHIEVEMENTS)if(!world.achievements.includes(id)&&test(world))world.achievements.push(id);}
+
