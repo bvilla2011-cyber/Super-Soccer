@@ -4,8 +4,8 @@ import { PITCH } from './physics.js';
 const SKINS=['#f2c19b','#dca16e','#b8784d','#875236','#5d362a'];
 const HAIR=['#2d2421','#593d2e','#b58a52','#1d2026','#aa6544','#c0b7a2'];
 export class Renderer {
-  constructor(canvas,settings){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.settings=settings;this.camera={x:525,y:330,zoom:1};this.particles=Array.from({length:120},()=>({life:0}));this.width=1;this.height=1;this.staticPitch=this.makePitch();this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(canvas);this.resize();}
-  resize(){const r=this.canvas.getBoundingClientRect();this.width=Math.max(1,r.width);this.height=Math.max(1,r.height);this.dpr=Math.min(window.devicePixelRatio||1,this.settings.quality==='low'?1:2);this.canvas.width=Math.round(this.width*this.dpr);this.canvas.height=Math.round(this.height*this.dpr);}
+  constructor(canvas,settings){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.settings=settings;this.camera={x:525,y:330,zoom:1};this.particles=Array.from({length:120},()=>({life:0}));this.sortedPlayers=[];this.playerSort=(a,b)=>a.y-b.y;this.width=1;this.height=1;this.staticPitch=this.makePitch();this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(canvas);this.resize();}
+  resize(){const r=this.canvas.getBoundingClientRect();this.width=Math.max(1,r.width);this.height=Math.max(1,r.height);this.dpr=Math.min(window.devicePixelRatio||1,this.settings.quality==='low'?1:1.5);this.canvas.width=Math.round(this.width*this.dpr);this.canvas.height=Math.round(this.height*this.dpr);}
   makePitch(){
     const c=document.createElement('canvas');c.width=1270;c.height=860;const ctx=c.getContext('2d');ctx.translate(110,100);
     ctx.fillStyle='#0b2027';ctx.fillRect(-110,-100,1270,860);
@@ -42,7 +42,7 @@ export class Renderer {
     this.offset={x:w/2-this.camera.x*scale,y:h/2-this.camera.y*scale};
     ctx.save();ctx.translate(this.offset.x,this.offset.y);ctx.scale(scale,scale);ctx.drawImage(this.staticPitch,-110,-100);
     this.drawGoals(ctx,game,false);
-    const sorted=[...game.players].filter(p=>!p.red).sort((a,b)=>a.y-b.y);
+    const sorted=this.sortedPlayers;sorted.length=0;for(const p of game.players)if(!p.red)sorted.push(p);sorted.sort(this.playerSort);
     for(const p of sorted)this.drawPlayer(ctx,p,game.teams[p.side].colors,game.elapsed);
     this.drawReferee(ctx,game);
     if(!this.settings.reducedMotion&&game.state==='Action'&&game.activeAction){

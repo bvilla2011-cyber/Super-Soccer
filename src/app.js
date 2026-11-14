@@ -12,7 +12,8 @@ import { simulateMatch } from './simulation.js';
 const root=document.getElementById('app'),modalRoot=document.getElementById('modal-root');
 let world=null,view='landing',slot=1,slots=[],saveStatus='Guardado',pendingMatch=null,game=null,renderer=null,frameId=0,matchContext=null,busy=false,saveInFlight=false,lastCheckpoint=0;
 let setup={country:'es',division:1,teamId:'es-2',manager:'',difficulty:'club',slot:1,mode:'career',opponent:'es-1'};
-const previewTeams=createTeams(42).teams;
+let previewTeams=null;
+function getPreviewTeams(){return previewTeams??=(createTeams(42).teams);}
 let filters={page:0,sort:'rating'},competition=null,compTab='table',calendarAll=false,calendarEvent=null,settings=getSettings(),modalStack=[],lastFocus=null,saveTimer=null,searchTimer=null;
 const audio=new Audio(settings);
 
@@ -86,8 +87,8 @@ async function load(id,backup=false){
 }
 function findPlayer(id,w=world){const team=w?.teams.find(t=>t.roster.some(p=>p.id===id)||(t.academyPlayers??[]).some(p=>p.id===id));return {p:team?.roster.find(p=>p.id===id)??team?.academyPlayers?.find(p=>p.id===id)??w?.freeAgents.find(p=>p.id===id),team};}
 function showPlayer(id){const w=matchContext?.friendly?matchContext.world:world;const {p,team}=findPlayer(id,w);if(p){let html=UI.playerCard(w,p,team);if(game)html=html.replace(/<div class="modal-actions">[\s\S]*?<\/div><\/div>$/,'</div>');modal('INFORME DEL JUGADOR',html,{wide:true});}}
-function updateSetupModal(){const top=modalStack.at(-1);if(top?.title==='NUEVO PROYECTO'){top.content=UI.setupView(previewTeams,slots,setup);renderModal();}}
-function newProject(id=null){if(id)setup.slot=Number(id);else setup.slot=slots.find(s=>!s.exists)?.id??1;modal('NUEVO PROYECTO',UI.setupView(previewTeams,slots,setup),{wide:true});}
+function updateSetupModal(){const top=modalStack.at(-1);if(top?.title==='NUEVO PROYECTO'){top.content=UI.setupView(getPreviewTeams(),slots,setup);renderModal();}}
+function newProject(id=null){if(id)setup.slot=Number(id);else setup.slot=slots.find(s=>!s.exists)?.id??1;modal('NUEVO PROYECTO',UI.setupView(getPreviewTeams(),slots,setup),{wide:true});}
 async function startCareer(force=false){
   if(busy)return;
   if(setup.mode==='friendly') {
@@ -293,7 +294,7 @@ async function action(a){
   if(a==='new'||/^new-\d$/.test(a)){newProject(a.split('-')[1]);return;}
   if(a==='start-career'||a==='start-career-confirmed'){await startCareer(a.endsWith('confirmed'));return;}
   if(a.startsWith('setup-mode-')){setup.mode=a.slice(11);updateSetupModal();return;}
-  if(a.startsWith('setup-team-')){setup.teamId=a.slice(11);if(setup.opponent===setup.teamId)setup.opponent=previewTeams.find(t=>t.id!==setup.teamId).id;updateSetupModal();return;}
+  if(a.startsWith('setup-team-')){setup.teamId=a.slice(11);if(setup.opponent===setup.teamId)setup.opponent=getPreviewTeams().find(t=>t.id!==setup.teamId).id;updateSetupModal();return;}
   if(a==='watch'||a==='matchday'){
     if(!world)return;
     if(!pendingMatch&&(world.weekDay??0)<6){await simulateWeek();return;}
@@ -391,7 +392,7 @@ document.addEventListener('click',ev=>{
 document.addEventListener('change',ev=>{
   const el=ev.target;
   try{
-    if(el.dataset.setup){const key=el.dataset.setup;setup[key]=key==='slot'||key==='division'?Number(el.value):el.value;if(key==='country'||key==='division'){setup.teamId=previewTeams.find(t=>t.country===setup.country&&t.division===Number(setup.division)).id;}updateSetupModal();}
+    if(el.dataset.setup){const key=el.dataset.setup;setup[key]=key==='slot'||key==='division'?Number(el.value):el.value;if(key==='country'||key==='division'){setup.teamId=getPreviewTeams().find(t=>t.country===setup.country&&t.division===Number(setup.division)).id;}updateSetupModal();}
     if(el.dataset.filter){filters[el.dataset.filter]=el.type==='checkbox'?el.checked:el.value;filters.page=0;render();}
     if(el.dataset.preference){const key=el.dataset.preference;settings[key]=el.type==='checkbox'?el.checked:['duration','volume'].includes(key)?Number(el.value):el.value;setSettings(settings);audio.configure(settings);}
     if(el.dataset.change){
