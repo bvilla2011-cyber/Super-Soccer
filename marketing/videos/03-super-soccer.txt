@@ -1,0 +1,1 @@
+SUPER SOCCER es nuestro primer proyecto. Es una beta en desarrollo: todavía no se puede jugar. El repositorio describe un juego de gestión donde preparas la plantilla y observas una simulación animada del partido. No controlas a los futbolistas. Próximamente te enseñamos más.

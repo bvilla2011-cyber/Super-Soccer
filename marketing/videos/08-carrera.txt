@@ -1,0 +1,1 @@
+El proyecto incluye carrera multitemporada, mercado, cantera e historial. La idea es construir una trayectoria de entrenador temporada a temporada. Son funciones descritas en el repositorio; la beta todavía no es jugable. Guarda esta pista y sigue a UniFormer Studio para el siguiente avance.

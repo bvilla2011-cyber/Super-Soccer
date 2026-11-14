@@ -1,0 +1,38 @@
+[Script Info]
+Title: UniFormer Studio campaign captions
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,DejaVu Sans,46,&H00FFFFFF,&H000000FF,&H00101418,&HCC101820,-1,0,0,0,100,100,0,0,3,2,0,8,60,60,260,1
+Style: Keyword,DejaVu Sans,46,&H0096E7A1,&H000000FF,&H00101418,&HCC101820,-1,0,0,0,100,100,0,0,3,2,0,8,60,60,260,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:00.58,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}En{\rDefault} SUPER
+Dialogue: 0,0:00:00.58,0:00:01.32,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}SOCCER{\rDefault} el
+Dialogue: 0,0:00:01.32,0:00:02.39,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}descanso{\rDefault} sirve
+Dialogue: 0,0:00:02.39,0:00:03.38,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}para{\rDefault} preparar
+Dialogue: 0,0:00:03.38,0:00:03.96,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}el{\rDefault} cinco
+Dialogue: 0,0:00:03.96,0:00:04.29,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}de{\rDefault} la
+Dialogue: 0,0:00:04.29,0:00:05.36,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}segunda{\rDefault} parte.
+Dialogue: 0,0:00:05.36,0:00:06.35,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}La{\rDefault} simulación
+Dialogue: 0,0:00:06.35,0:00:06.93,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}tiene{\rDefault} en
+Dialogue: 0,0:00:06.93,0:00:07.75,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}cuenta{\rDefault} esos
+Dialogue: 0,0:00:07.75,0:00:08.49,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}cambios{\rDefault} al
+Dialogue: 0,0:00:08.49,0:00:09.32,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}calcular{\rDefault} el
+Dialogue: 0,0:00:09.32,0:00:10.55,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}siguiente{\rDefault} tramo.
+Dialogue: 0,0:00:10.55,0:00:11.30,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}Es{\rDefault} gestión
+Dialogue: 0,0:00:11.30,0:00:12.45,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}y{\rDefault} retransmisión
+Dialogue: 0,0:00:12.45,0:00:13.27,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}animada{\rDefault} no
+Dialogue: 0,0:00:13.27,0:00:14.43,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}control{\rDefault} directo
+Dialogue: 0,0:00:14.43,0:00:14.92,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}de{\rDefault} cada
+Dialogue: 0,0:00:14.92,0:00:16.24,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}futbolista{\rDefault} Sigue
+Dialogue: 0,0:00:16.24,0:00:17.07,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}a{\rDefault} UniFormer
+Dialogue: 0,0:00:17.07,0:00:17.89,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}Studio{\rDefault} para
+Dialogue: 0,0:00:17.89,0:00:18.47,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}ver{\rDefault} cómo
+Dialogue: 0,0:00:18.47,0:00:19.46,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}evoluciona{\rDefault} la
+Dialogue: 0,0:00:19.46,0:00:19.85,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}beta{\rDefault} 

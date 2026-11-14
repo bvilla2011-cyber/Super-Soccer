@@ -1,0 +1,36 @@
+[Script Info]
+Title: UniFormer Studio campaign captions
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,DejaVu Sans,46,&H00FFFFFF,&H000000FF,&H00101418,&HCC101820,-1,0,0,0,100,100,0,0,3,2,0,8,60,60,260,1
+Style: Keyword,DejaVu Sans,46,&H0096E7A1,&H000000FF,&H00101418,&HCC101820,-1,0,0,0,100,100,0,0,3,2,0,8,60,60,260,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:00.79,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}El{\rDefault} proyecto
+Dialogue: 0,0:00:00.79,0:00:01.89,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}incluye{\rDefault} carrera
+Dialogue: 0,0:00:01.89,0:00:03.70,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}multitemporada{\rDefault} mercado,
+Dialogue: 0,0:00:03.70,0:00:04.33,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}cantera{\rDefault} e
+Dialogue: 0,0:00:04.33,0:00:05.28,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}historial{\rDefault} La
+Dialogue: 0,0:00:05.28,0:00:05.75,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}idea{\rDefault} es
+Dialogue: 0,0:00:05.75,0:00:06.70,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}construir{\rDefault} una
+Dialogue: 0,0:00:06.70,0:00:07.72,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}trayectoria{\rDefault} de
+Dialogue: 0,0:00:07.72,0:00:09.22,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}entrenador{\rDefault} temporada
+Dialogue: 0,0:00:09.22,0:00:10.09,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}a{\rDefault} temporada.
+Dialogue: 0,0:00:10.09,0:00:11.03,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}Son{\rDefault} funciones
+Dialogue: 0,0:00:11.03,0:00:11.90,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}descritas{\rDefault} en
+Dialogue: 0,0:00:11.90,0:00:13.00,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}el{\rDefault} repositorio;
+Dialogue: 0,0:00:13.00,0:00:13.47,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}la{\rDefault} beta
+Dialogue: 0,0:00:13.47,0:00:14.18,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}todavía{\rDefault} no
+Dialogue: 0,0:00:14.18,0:00:14.97,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}es{\rDefault} jugable.
+Dialogue: 0,0:00:14.97,0:00:15.76,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}Guarda{\rDefault} esta
+Dialogue: 0,0:00:15.76,0:00:16.23,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}pista{\rDefault} y
+Dialogue: 0,0:00:16.23,0:00:16.70,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}sigue{\rDefault} a
+Dialogue: 0,0:00:16.70,0:00:17.89,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}UniFormer{\rDefault} Studio
+Dialogue: 0,0:00:17.89,0:00:18.36,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}para{\rDefault} el
+Dialogue: 0,0:00:18.36,0:00:19.60,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}siguiente{\rDefault} avance.

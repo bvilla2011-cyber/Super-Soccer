@@ -1,0 +1,1 @@
+En SUPER SOCCER, el descanso sirve para preparar el cinco de la segunda parte. La simulación tiene en cuenta esos cambios al calcular el siguiente tramo. Es gestión y retransmisión animada, no control directo de cada futbolista. Sigue a UniFormer Studio para ver cómo evoluciona la beta.
