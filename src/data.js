@@ -32,6 +32,12 @@ export const FORMATIONS = {
   '4-4-2': { name:'Bloque 4-4-2 · adaptado a 5', bases:[[.06,.5],[.31,.3],[.31,.7],[.6,.28],[.69,.69]], attack:1, defense:1 },
   '3-5-2': { name:'Presión 3-5-2 · adaptado a 5', bases:[[.06,.5],[.27,.5],[.49,.25],[.49,.75],[.76,.5]], attack:3, defense:-2 }
 };
+// Devuelve una posición de campo por jugador activo. La primera coordenada
+// es la del portero; si faltan jugadores, conservamos el orden de la forma.
+export function formationCoordinates(team, players = activePlayers(team)) {
+  const bases = (FORMATIONS[team.formation] ?? FORMATIONS['2-1-1']).bases;
+  return players.map((_, index) => [...(bases[index] ?? bases[bases.length - 1])]);
+}
 export const DIFFICULTIES = {
   rookie:{name:'Debutante',reaction:.65,accuracy:.78,speed:.92,bonus:5},
   club:{name:'Profesional',reaction:.32,accuracy:.91,speed:1,bonus:0},
@@ -135,4 +141,5 @@ export function badgeSVG(team, size = 48) {
   const key = parseInt(hash(team.id),16)%3;
   return `<svg class="crest" width="${size}" height="${size}" viewBox="0 0 64 72" aria-hidden="true"><path d="M5 5L32 1 59 5V36Q58 56 32 69 6 56 5 36Z" fill="${team.colors[0]}" stroke="${team.colors[1]}" stroke-width="3"/><path d="${key===0?'M12 15H52V23H12ZM12 31H52V39H12Z':key===1?'M18 9H27V54L18 46ZM37 9H46V46L37 54Z':'M9 39L48 7 56 19 19 54Z'}" fill="${team.colors[1]}" opacity=".85"/><circle cx="32" cy="30" r="12" fill="#102329"/><text x="32" y="34" text-anchor="middle" font-size="10" font-family="sans-serif" font-weight="900" fill="#fff">${team.code}</text><path d="M25 51L32 46 39 51 36 59H28Z" fill="${team.colors[1]}"/></svg>`;
 }
+
 
