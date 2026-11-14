@@ -57,7 +57,7 @@ export function playerTile(w,p,team=null,options={}) {
 
 export function squad(w,halftime=false) {
  const t=teamById(w,w.userTeam),active=new Set(activePlayers(t).map(p=>p.id));
- const candidates=t.roster.filter(p=>!p.injury&&!p.ban&&!active.has(p.id));
+ const candidates=t.roster.filter(p=>!active.has(p.id));
  return `${halftime?'':sectionHead('ELIGE TU ONCE','MI EQUIPO',tag(`${t.roster.length} / 26`,'lime'))}<div class="squad-layout"><section class="panel tactics-panel"><div class="panel-head"><h2>${icon('whistle')} LA PIZARRA</h2>${tag('11 VS 11')}</div>${miniPitch(t)}<div class="tactic-controls"><label>FORMACIÓN<select data-change="formation">${Object.entries(FORMATIONS).filter(([,f])=>!f.legacy).map(([key,f])=>`<option value="${key}" ${t.formation===key?'selected':''}>${e(f.name)}</option>`).join('')}</select></label><label>TÁCTICA<select data-change="tactic">${[['balanced','Equilibrado'],['attacking','Ofensivo'],['defensive','Defensivo']].map(([v,n])=>`<option value="${v}" ${t.tactic===v?'selected':''}>${n}</option>`).join('')}</select></label></div>${moodMeter(t.happiness??65,'FELICIDAD DEL EQUIPO')}</section><section class="panel roster-panel"><div class="panel-head"><h2>${icon('squad')} ${halftime?'CAMBIOS':'VESTUARIO'}</h2><span class="tiny">${candidates.length} DISPONIBLES PARA ENTRAR</span></div><p class="hint">Solo aparecen suplentes sanos y sin sanción. Pulsa una ficha para ver su felicidad y estado.</p><div class="roster-cards">${[...candidates].sort((a,b)=>overall(b)-overall(a)).map(p=>playerTile(w,p,t,{starter:false,roster:true})).join('')}${candidates.length?'':empty('NO HAY CAMBIOS DISPONIBLES','No quedan suplentes sanos y sin sanción para entrar.')}</div></section></div>`;
 }
 
