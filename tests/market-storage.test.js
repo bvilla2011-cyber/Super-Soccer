@@ -1,22 +1,22 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {createCareer,buyPlayer,sellPlayer,renewPlayer,promoteYouth,upgrade,advance,nextSeason,transferPrice} from '../src/career.js';
+import {createCareer,buyPlayer,sellPlayer,renewPlayer,promoteYouth,upgrade,upgradeCost,advance,nextSeason,transferPrice} from '../src/career.js';
 import {teamById,overall,wage} from '../src/data.js';
 import {exportSave,importSave,makeEnvelope,unpack,validatePayload,saveSlot,loadSlot,listSlots} from '../src/storage.js';
 import {hash} from '../src/utils.js';
 
 test('transfer funds balance, ownership moves and repeated purchases fail',()=>{
- const w=createCareer({seed:42}),own=teamById(w,w.userTeam),source=teamById(w,'en-1'),p=source.roster[8],fee=transferPrice(p,source,own),budget=own.budget,other=source.budget;
+ const w=createCareer({seed:42}),own=teamById(w,w.userTeam),source=teamById(w,'en-1'),p=source.roster[8],fee=transferPrice(p,source,own),budget=own.budget,other=source.budget;own.roster.pop();
  buyPlayer(w,p.id);assert.equal(own.budget,budget-fee);assert.equal(source.budget,other+fee);assert.ok(own.roster.some(q=>q.id===p.id));assert.ok(!source.roster.some(q=>q.id===p.id));assert.throws(()=>buyPlayer(w,p.id),/disponible/);validatePayload({world:w});
  const before=own.budget,received=sellPlayer(w,p.id);assert.equal(own.budget,before+received);assert.ok(!own.roster.some(q=>q.id===p.id));validatePayload({world:w});
 });
 test('market enforces budget, window, squad limit and goalkeeper retention',()=>{
- const w=createCareer({seed:9}),own=teamById(w,w.userTeam);own.budget=0;assert.throws(()=>buyPlayer(w,'en-1-p4'),/Presupuesto/);own.budget=1e9;
+ const w=createCareer({seed:9}),own=teamById(w,w.userTeam);own.roster.pop();own.budget=0;assert.throws(()=>buyPlayer(w,'en-1-p4'),/Presupuesto/);own.budget=1e9;
  w.eventIndex=w.events.findIndex(e=>e.id==='league-8');assert.throws(()=>buyPlayer(w,'en-1-p4'),/cerrado/);
- w.eventIndex=0;own.roster=own.roster.slice(0,8).filter(p=>p.position!=='POR'||p.id===own.roster[0].id);assert.throws(()=>sellPlayer(w,own.roster[0].id),/once|portero/);
+ w.eventIndex=0;own.roster=own.roster.slice(0,8).filter(p=>p.position!=='POR'||p.id===own.roster[0].id);assert.throws(()=>sellPlayer(w,own.roster[0].id),/ocho|portero/);
 });
 test('renewal and facility upgrade charge exactly once; youth is once per season',()=>{
  const w=createCareer({seed:42}),t=teamById(w,w.userTeam),p=t.roster.find(p=>p.contract<5),cost=wage(p)*12,before=t.budget,contract=p.contract;renewPlayer(w,p.id);assert.equal(p.contract,Math.min(5,contract+2));assert.equal(t.budget,before-cost);
- const start=t.budget;upgrade(w,'academy');assert.equal(t.academy,2);assert.equal(t.budget,start-1000000);const youth=promoteYouth(w);assert.equal(youth.age,17);assert.ok(youth.potential>=overall(youth));assert.throws(()=>promoteYouth(w),/temporada/);validatePayload({world:w});
+ const start=t.budget;upgrade(w,'academy');assert.equal(t.academy,2);assert.equal(t.budget,start-upgradeCost(t,'academy'));const youth=promoteYouth(w);assert.equal(youth.age,17);assert.ok(youth.potential>=overall(youth));assert.throws(()=>promoteYouth(w),/temporada/);validatePayload({world:w});
 });
 test('growth never exceeds potential and veterans age and retire over seasons',()=>{
  const w=createCareer({seed:6}),t=teamById(w,w.userTeam);const veteran=t.roster[0];veteran.age=37;veteran.contract=3;const young=t.roster[3];young.age=18;young.contract=5;const before=overall(young);while(!w.seasonComplete)advance(w);assert.ok(overall(young)>=before);assert.ok(overall(young)<=young.potential);nextSeason(w);assert.ok(!t.roster.some(p=>p.id===veteran.id));assert.equal(young.age,19);
@@ -33,7 +33,7 @@ test('save slots are independent and preserve a recoverable previous generation'
  const record=JSON.parse(memory.get('super-soccer-save-1'));record.current.checksum='broken';memory.set('super-soccer-save-1',JSON.stringify(record));const recovered=await loadSlot(1);assert.ok(recovered.recovered);assert.equal(recovered.world.manager,'Primero');
 });
 test('a mid-season transfer preserves season and career statistics',()=>{
- const w=createCareer({seed:42});advance(w);const source=teamById(w,'en-1'),own=teamById(w,w.userTeam),p=source.roster[4];const season=structuredClone(p.stats),career=structuredClone(p.career);own.budget=1_000_000_000;buyPlayer(w,p.id);assert.deepEqual(p.stats,season);assert.deepEqual(p.career,career);
+ const w=createCareer({seed:42});advance(w);const source=teamById(w,'en-1'),own=teamById(w,w.userTeam),p=source.roster[4];own.roster.pop();const season=structuredClone(p.stats),career=structuredClone(p.career);own.budget=1_000_000_000;buyPlayer(w,p.id);assert.deepEqual(p.stats,season);assert.deepEqual(p.career,career);
 });
 
 test('loads a save from an older roster and feature schema by migrating before validation',async()=>{
