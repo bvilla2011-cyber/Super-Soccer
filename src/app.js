@@ -331,15 +331,15 @@ async function action(a){
     confirm(`Fichar a ${report.prospect.name}`,`El juvenil entrará en la cantera del club por ${money(report.fee)}. Tendrá contrato de formación y podrá subir al primer equipo desde los 15 años.`,'Fichar en cantera',`recruit-report-confirm-${report.id}`);return;
   }
   if(a.startsWith('recruit-report-confirm-')){
-    const p=recruitAcademyProspect(world,a.slice(23));await save();closeModal(true);render();modal('NUEVO JUGADOR DE CANTERA',`${UI.playerCard(world,p,teamById(world,world.userTeam))}<div class="modal-actions">${UI.button('CONTINUAR','close-modal','btn primary')}</div>`,{wide:true});return;
+    const p=recruitAcademyProspect(world,a.slice(23)),own=teamById(world,world.userTeam);await save();closeModal(true);render();modal('NUEVA PROMESA',UI.dealCelebration({player:p,team:own,kind:'academy',title:'¡NUEVA PROMESA!',subtitle:`${p.name} se une a la cantera de ${own.name}.`,details:`${p.age} años · ${p.position} · Potencial ${p.potential}`}),{wide:true});return;
   }
   if(a.startsWith('promote-academy-')){
-    const p=promoteAcademyPlayer(world,a.slice(16));await save();closeModal(true);render();modal('¡PROMESA ASCENDIDA!',`<div class="signing-show">${UI.portrait(p,teamById(world,world.userTeam))}<h2>${e(p.name)} SUBE AL PRIMER EQUIPO</h2><p>Con ${p.age} años, ya puede entrar en la convocatoria.</p>${UI.button('CONTINUAR','close-modal','btn primary')}</div>`,{wide:true});return;
+    const p=promoteAcademyPlayer(world,a.slice(16)),own=teamById(world,world.userTeam);await save();closeModal(true);render();modal('¡PROMESA ASCENDIDA!',UI.dealCelebration({player:p,team:own,kind:'promotion',title:`${p.name} SUBE AL PRIMER EQUIPO`,subtitle:`Con ${p.age} años, ya puede entrar en la convocatoria.`,details:`${p.position} · Media ${overall(p)} · Potencial ${p.potential}`}),{wide:true});return;
   }
   if(a.startsWith('incoming-accept-')){
     const decision=a.startsWith('incoming-accept-counter-')?'accept-counter':a.startsWith('incoming-accept-final-')?'accept-final':'accept-original';
     const offerId=a.replace(/^incoming-accept-(counter-|final-)?/,'');
-    const p=answerIncomingOffer(world,offerId,decision),newClub=world.teams.find(t=>t.roster.some(player=>player.id===p.id));await save();closeModal(true);render();modal('VENTA CERRADA',`<div class="signing-show">${UI.portrait(p,newClub)}<h2>${e(p.name)} CAMBIA DE CLUB</h2><p>La operación se ha completado y el presupuesto de tu club se ha actualizado.</p>${UI.button('CONTINUAR','close-modal','btn primary')}</div>`,{wide:true});return;
+    const p=answerIncomingOffer(world,offerId,decision),newClub=world.teams.find(t=>t.roster.some(player=>player.id===p.id)),sale=world.transferLog.find(item=>item.name===p.name&&item.season===world.season);await save();closeModal(true);render();modal('VENTA CERRADA',UI.dealCelebration({player:p,team:newClub,kind:'sale',title:`${p.name} CAMBIA DE CLUB`,subtitle:`${p.name} inicia una nueva etapa en ${newClub?.name??'otro club'}.`,details:sale?`${sale.from} → ${sale.to} · ${money(sale.fee)}`:'Traspaso completado'}),{wide:true});return;
   }
   if(a.startsWith('incoming-reject-')){answerIncomingOffer(world,a.slice(16),'reject');await save();closeModal(true);inbox();toast('Oferta rechazada.');return;}
   if(a.startsWith('incoming-counter-')){
@@ -357,19 +357,18 @@ async function action(a){
   }
   if(a.startsWith('counter-')){const o=counterOffer(world,a.slice(8));offer(o.playerId,o.type,o.counter);return;}
   if(a.startsWith('sign-offer-')){
-    const p=signOffer(world,a.slice(11));closeModal(true);await save();render();
-    modal('¡FICHAJE CONFIRMADO!',`<div class="signing-show">${UI.portrait(p,teamById(world,world.userTeam))}<h2>¡BIENVENIDO, ${e(p.name)}!</h2><p>Ya forma parte de tu plantilla.</p>${UI.button('CONTINUAR','close-modal','btn primary')}</div>`);return;
+    const p=signOffer(world,a.slice(11)),own=teamById(world,world.userTeam),deal=world.transferLog.find(item=>item.name===p.name&&item.to===own.name);closeModal(true);await save();render();modal('¡FICHAJE CONFIRMADO!',UI.dealCelebration({player:p,team:own,kind:'signing',title:`¡BIENVENIDO, ${p.name}!`,subtitle:`Ya forma parte de ${own.name} y se incorpora al banquillo.`,details:deal?`${deal.from} → ${deal.to} · ${money(deal.fee)}`:'Contrato firmado'}),{wide:true});return;
   }
-  if(a.startsWith('buy-')){const p=buyPlayer(world,a.slice(4));closeModal(true);scheduleSave();render();toast(`${p.name} se incorpora al equipo.`);return;}
+  if(a.startsWith('buy-')){const p=buyPlayer(world,a.slice(4)),own=teamById(world,world.userTeam),deal=world.transferLog.find(item=>item.name===p.name&&item.to===own.name);closeModal(true);await save();render();modal('¡FICHAJE CONFIRMADO!',UI.dealCelebration({player:p,team:own,kind:'signing',title:`¡BIENVENIDO, ${p.name}!`,subtitle:`Ya forma parte de ${own.name} y se incorpora al banquillo.`,details:deal?`${deal.from} → ${deal.to} · ${money(deal.fee)}`:'Contrato firmado'}),{wide:true});return;}
   if(a.startsWith('sell-')&&!a.startsWith('sell-confirm-')){const {p,team}=findPlayer(a.slice(5));confirm(`Vender a ${p.name}`,`La mejor oferta de venta es ${money(Math.round(playerValue(p,team)*.9/10000)*10000)}. El jugador saldrá de tu plantilla y un club con presupuesto cubrirá el traspaso.`,'Aceptar oferta',`sell-confirm-${p.id}`);return;}
   if(a.startsWith('fast-sell-')&&!a.startsWith('fast-sell-confirm-')){const {p,team}=findPlayer(a.slice(10));if(!p||team?.id!==world.userTeam)throw new Error('No se encuentra el jugador de tu plantilla.');const fee=Math.round(playerValue(p,team)*.75/10000)*10000;confirm('Venta rápida',`Venderás a ${p.name} al instante por ${money(fee)}, un 25 % menos de su valor estimado. Siempre hay comprador durante tus cinco ventas rápidas de la temporada.`,'Vender ahora',`fast-sell-confirm-${p.id}`);return;}
-  if(a.startsWith('fast-sell-confirm-')){const fee=quickSellPlayer(world,a.slice(18));closeModal(true);scheduleSave();render();toast(`Venta rápida completada por ${money(fee)}.`);return;}
-  if(a.startsWith('sell-confirm-')){const fee=sellPlayer(world,a.slice(13));closeModal(true);scheduleSave();render();toast(`Venta completada por ${money(fee)}.`);return;}
+  if(a.startsWith('fast-sell-confirm-')){const id=a.slice(18),{p,team:own}=findPlayer(id),fee=quickSellPlayer(world,id),sale=world.transferLog.find(item=>item.name===p.name&&item.from===own.name);closeModal(true);await save();render();modal('VENTA RÁPIDA',UI.dealCelebration({player:p,team:own,kind:'sale',title:'VENTA RÁPIDA CERRADA',subtitle:`${p.name} deja el club al instante.`,details:sale?`${sale.from} → ${sale.to} · ${money(fee)}`:money(fee)}),{wide:true});return;}
+  if(a.startsWith('sell-confirm-')){const id=a.slice(13),{p,team:own}=findPlayer(id),fee=sellPlayer(world,id),sale=world.transferLog.find(item=>item.name===p.name&&item.from===own.name);closeModal(true);await save();render();modal('VENTA COMPLETADA',UI.dealCelebration({player:p,team:own,kind:'sale',title:'VENTA CERRADA',subtitle:`${p.name} inicia una nueva etapa.`,details:sale?`${sale.from} → ${sale.to} · ${money(fee)}`:money(fee)}),{wide:true});return;}
   if(a.startsWith('renew-')&&!a.startsWith('renew-confirm-')){const {p}=findPlayer(a.slice(6));confirm(`Renovar a ${p.name}`,`La prima de renovación cuesta ${money(wage(p)*12)}. Su contrato se ampliará dos temporadas, hasta un máximo de cinco.`,'Renovar contrato',`renew-confirm-${p.id}`);return;}
   if(a.startsWith('renew-confirm-')){renewPlayer(world,a.slice(14));closeModal(true);scheduleSave();render();toast('Contrato renovado.');return;}
   if(a.startsWith('upgrade-')){const kind=a.slice(8),t=teamById(world,world.userTeam);confirm('Mejorar instalaciones',`La inversión cuesta ${money(upgradeCost(t,kind))} y aumenta un nivel la instalación.`,'Invertir',`invest-${kind}`);return;}
   if(a.startsWith('invest-')){upgrade(world,a.slice(7));closeModal(true);scheduleSave();render();toast('Instalación mejorada.');return;}
-  if(a==='youth'){const p=promoteYouth(world);unlockAchievements(world);scheduleSave();render();showPlayer(p.id);return;}
+  if(a==='youth'){const p=promoteYouth(world),own=teamById(world,world.userTeam);unlockAchievements(world);await save();render();modal('¡PROMESA ASCENDIDA!',UI.dealCelebration({player:p,team:own,kind:'promotion',title:`${p.name} SUBE AL PRIMER EQUIPO`,subtitle:`Con ${p.age} años, empieza su camino en la plantilla principal.`,details:`${p.position} · Media ${overall(p)} · Potencial ${p.potential}`}),{wide:true});return;}
   if(a==='market-prev'||a==='market-next'){filters.page+=a.endsWith('next')?1:-1;render();return;}
   if(a.startsWith('comp-tab-')){compTab=a.slice(9);render();return;}
   if(a==='calendar-own'||a==='calendar-all'){calendarAll=a.endsWith('all');render();return;}
