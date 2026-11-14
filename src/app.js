@@ -303,6 +303,8 @@ async function action(a){
   if(a==='quick-sim'){await quickSimulate();return;}
   if(a==='matchday'){await runMatchday();return;}
   if(a==='save'){await save({notify:true});if(view==='saves')render();return;}
+  if(a==='choose-save'){const saved=slots.filter(s=>s.exists&&!s.broken);modal('ESCOGER PARTIDA',`<p>Selecciona la carrera que quieres continuar.</p><div class="saved-game-picker">${saved.map(s=>UI.button(`<span><b>${e(s.club??'Carrera guardada')}</b><small>${e(s.manager??'Entrenador')} · Temporada ${s.season??'2026'} · Ranura ${s.id}</small></span><strong>↗</strong>`,`load-${s.id}`,'saved-game-choice')).join('')}</div>`);return;}
+
   if(a==='export'){checkpoint();download(`Super-Soccer-${world.season}-ranura-${slot}.json`,exportSave(world,pendingMatch));toast('Copia de la carrera exportada.');return;}
   if(a==='import'){document.getElementById('import-file').click();return;}
   if(a.startsWith('load-')&&!a.startsWith('load-confirm-')){if(world){confirm('Cargar otra carrera','Se abrirá la carrera de esta ranura. Tu carrera actual se guardará antes del cambio.','Guardar y cargar',`load-confirm-${a.slice(5)}`);}else await load(Number(a.slice(5)));return;}
