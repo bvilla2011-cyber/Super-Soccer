@@ -59,3 +59,5 @@ h1,h2,h3,.brand,.btn,.nav-item,.tag,.eyebrow,.tiny{font-family:ArcadeDisplay,Imp
 .home-news-button:hover{background:var(--yellow);color:var(--ink);transform:translateY(-2px)}
 .home-head-tools .hub-level{flex:none}
 @media(max-width:600px){.game-dock nav{gap:2px}.game-dock .nav-item{padding:4px 1px;font-size:6px}.game-dock .nav-item .game-icon{width:19px;height:19px}.home-head-tools{gap:6px}.home-news-button{width:36px;height:36px;padding:5px}.home-news-button .game-icon{width:21px;height:21px}.screen-home .section-head{gap:8px}.screen-home .section-head h1{font-size:clamp(19px,5vw,25px)}}
+.score-kit-dot{display:inline-block;flex:0 0 14px;width:14px;height:14px;border:2px solid #f3f0df;border-radius:50%;background:var(--kit-color);box-shadow:0 0 0 2px #102329,0 0 12px color-mix(in srgb,var(--kit-color) 55%,transparent);vertical-align:middle}
+@media(max-width:700px){.match-scoreboard{gap:10px;padding:12px 8px}.score-team{gap:7px;font-size:11px}.score-kit-dot{flex-basis:11px;width:11px;height:11px}.score-team .crest{width:31px;height:35px}.score-center{min-width:90px}.score-center>div{gap:8px}.score-center b{font-size:30px}}
