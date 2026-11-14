@@ -16,7 +16,7 @@ test('market enforces budget, window, squad limit and goalkeeper retention',()=>
 });
 test('renewal and facility upgrade charge exactly once; youth is once per season',()=>{
  const w=createCareer({seed:42}),t=teamById(w,w.userTeam),p=t.roster.find(p=>p.contract<5),cost=wage(p)*12,before=t.budget,contract=p.contract;renewPlayer(w,p.id);assert.equal(p.contract,Math.min(5,contract+2));assert.equal(t.budget,before-cost);
- const start=t.budget,academyCost=upgradeCost(t,'academy');upgrade(w,'academy');assert.equal(t.academy,2);assert.equal(t.budget,start-academyCost);const youth=promoteYouth(w);assert.equal(youth.age,17);assert.ok(youth.potential>=overall(youth));assert.throws(()=>promoteYouth(w),/temporada/);validatePayload({world:w});
+ const start=t.budget,academyCost=upgradeCost(t,'academy');upgrade(w,'academy');assert.equal(t.academy,2);assert.equal(t.budget,start-academyCost);t.roster.pop();const youth=promoteYouth(w);assert.equal(youth.age,17);assert.ok(youth.potential>=overall(youth));assert.throws(()=>promoteYouth(w),/temporada/);validatePayload({world:w});
 });
 test('growth never exceeds potential and veterans age and retire over seasons',()=>{
  const w=createCareer({seed:6}),t=teamById(w,w.userTeam);const veteran=t.roster[0];veteran.age=37;veteran.contract=3;const young=t.roster[3];young.age=18;young.contract=5;const before=overall(young);while(!w.seasonComplete)advance(w);assert.ok(overall(young)>=before);assert.ok(overall(young)<=young.potential);nextSeason(w);assert.ok(!t.roster.some(p=>p.id===veteran.id));assert.equal(young.age,19);
