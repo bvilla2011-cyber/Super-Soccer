@@ -62,12 +62,12 @@ export function squad(w,halftime=false) {
 }
 
 export function playerCard(w,p,team=null) {
-  const own=team?.id===w.userTeam,inAcademy=own&&(team.academyPlayers??[]).some(player=>player.id===p.id);const med=overall(p),valuationTeam=team??teamById(w,w.userTeam);
+  const own=team?.id===w.userTeam,inAcademy=own&&(team.academyPlayers??[]).some(player=>player.id===p.id);const med=overall(p),valuationTeam=team??teamById(w,w.userTeam),quickSaleFee=Math.round(playerValue(p,valuationTeam)*.75/10000)*10000,canQuickSell=transferOpen(w)&&!p.loan&&team?.roster.length>8&&(p.position!=='POR'||team.roster.filter(player=>player.position==='POR').length>1);
   const attributes=Object.entries(ATTRIBUTE_NAMES).map(([key,label])=>`<div class="attribute"><span>${label}</span><div><i style="width:${p.attributes[key]}%"></i></div><b>${Math.round(p.attributes[key])}</b></div>`).join('');
   return `<div class="player-profile"><div class="player-profile-top"><div class="profile-hero-portrait">${portrait(p,team)}</div><div>${tag(`${p.position} · ${p.age} AÑOS`)}<h2>${e(p.name)}</h2><p>${e(team?.name??'Agente libre')}</p><div class="profile-ratings">${rating(med,'jumbo')}<span>MEDIA</span><b>${p.potential}<small>POTENCIAL</small></b></div></div></div>
   <div class="profile-columns"><div>${attributes}</div><div class="player-facts"><div><span>Valor de mercado estimado</span><b>${money(playerValue(p,valuationTeam))}</b></div><div><span>Salario / partido de liga</span><b>${money(wage(p))}</b></div><div><span>Contrato</span><b>${p.contract} temporadas</b></div><div><span>Forma / Moral</span><b>${p.form.toFixed(1)} / ${p.morale}</b></div><div><span>Disponibilidad</span><b>${p.injury?`${p.injury} partidos de baja`:p.ban?`${p.ban} partidos de sanción`:'Disponible'}</b></div>${own?moodMeter(p.morale,'FELICIDAD INDIVIDUAL'):''}</div></div>
   <div class="profile-stat-grid">${[['PJ',p.stats.matches],['GOLES',p.stats.goals],['ASIST.',p.stats.assists],['PARADAS',p.stats.saves],['NOTA',p.stats.matches?(p.stats.rating/p.stats.matches).toFixed(1):'—'],['MINUTOS',p.stats.minutes]].map(([k,v])=>`<div><b>${v}</b><small>${k}</small></div>`).join('')}</div><p class="hint">Total de carrera: ${p.career.matches} partidos · ${p.career.goals} goles · ${p.career.assists} asistencias.</p>
-  <div class="modal-actions">${inAcademy?button('ASCENDER AL PRIMER EQUIPO',`promote-academy-${p.id}`,'btn primary',p.age<15||team.roster.length>=26?'disabled':''):own?`${button('Escuchar oferta',`sell-${p.id}`,'btn secondary',!transferOpen(w)?'disabled':'')}${button(`Renovar +2 años · ${money(wage(p)*12)}`,`renew-${p.id}`,'btn primary',p.contract>=5?'disabled':'')}`:button(`${team?'Negociar fichaje':'Ofrecer contrato'} · ${money(transferPrice(p,team,teamById(w,w.userTeam)))}`,`offer-${p.id}`,'btn primary',!transferOpen(w)?'disabled':'')}</div></div>`;
+  <div class="modal-actions">${inAcademy?button('ASCENDER AL PRIMER EQUIPO',`promote-academy-${p.id}`,'btn primary',p.age<15||team.roster.length>=26?'disabled':''):own?`${button('Escuchar oferta',`sell-${p.id}`,'btn secondary',!transferOpen(w)?'disabled':'')}${button(`Venta rápida · -25% · ${money(quickSaleFee)}`,`fast-sell-${p.id}`,'btn secondary quick-sale',canQuickSell?'':'disabled')}${button(`Renovar +2 años · ${money(wage(p)*12)}`,`renew-${p.id}`,'btn primary',p.contract>=5?'disabled':'')}`:button(`${team?'Negociar fichaje':'Ofrecer contrato'} · ${money(transferPrice(p,team,teamById(w,w.userTeam)))}`,`offer-${p.id}`,'btn primary',!transferOpen(w)?'disabled':'')}</div></div>`;
 }
 
 
@@ -164,3 +164,11 @@ export function setupView(teams,slots,config){
 }
 
 
+
+
+export function ballonGalaView(w) {
+  const gala=w.ballonGala;
+  if(!gala)return empty('La gala aún no se ha celebrado','Vuelve el 26 de octubre para conocer a los ganadores.');
+  const player=gala.player,club=gala.club;
+  return `<div class="ballon-gala"><div class="gala-lights" aria-hidden="true"><i></i><i></i><i></i></div><span class="gala-date">${e(gala.date??'26 de octubre')} · TEMPORADA ${gala.season}</span><h2>Una noche para recordar</h2><p>La temporada se detiene para reconocer a sus grandes protagonistas.</p><div class="gala-awards"><article class="gala-award ballon-award"><div class="gala-trophy">★</div><span>PREMIO AL MEJOR JUGADOR</span><h3>Balón de Oro</h3><b>${e(player?.name??'Sin ganador')}</b><small>${e(player?.club??'')} · ${player?.goals??0} goles · ${player?.assists??0} asistencias · ${player?.titles??0} títulos</small></article><article class="gala-award club-award"><div class="gala-trophy">♜</div><span>PREMIO AL MEJOR CLUB</span><h3>Club del año</h3><b>${e(club?.name??'Sin ganador')}</b><small>${club?.players??0} jugadores · ${club?.played??0} partidos · ${club?.wins??0} victorias · ${club?.titles??0} títulos</small></article></div><p class="gala-method">El Balón de Oro valora goles, asistencias, partidos y títulos. El premio al club combina rendimiento de la plantilla, partidos, victorias y trofeos.</p></div>`;
+}

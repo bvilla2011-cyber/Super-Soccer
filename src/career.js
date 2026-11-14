@@ -129,6 +129,7 @@ export function setupSeason(world) {
     if(domestic.includes(r)) world.events.push({id:`cup-${domestic.indexOf(r)}`,kind:'cup',round:domestic.indexOf(r),label:`Copas nacionales · ${knockoutLabel(16/2**domestic.indexOf(r))}`});
     if(europe.includes(r)) {const n=europe.indexOf(r);world.events.push({id:`europe-${n}`,kind:'europe',round:n,label:n<6?`Europa · Grupos ${n+1}/6`:`Europa · ${knockoutLabel(8/2**(n-6))}`});}
   }
+  ensureBallonGalaEvent(world);
 }
 
 function setupPractice(world) {
@@ -157,7 +158,7 @@ export function prepareEvent(world) {
   });
 }
 export function eventFixtures(world) {prepareEvent(world);const e=world.events[world.eventIndex];return e?world.fixtures.filter(f=>f.eventId===e.id&&!f.bye):[];}
-export function nextFixture(world) {return eventFixtures(world).find(f=>f.home===world.userTeam||f.away===world.userTeam)??null;}
+export function nextFixture(world) {ensureBallonGalaEvent(world);return eventFixtures(world).find(f=>f.home===world.userTeam||f.away===world.userTeam)??null;}
 export function transferOpen(world) {
   if(world.mode!=='career')return true;
   const leagueRound=world.events.slice(0,world.eventIndex).filter(e=>e.kind==='league').length;
@@ -165,6 +166,42 @@ export function transferOpen(world) {
 }
 
 function addFinance(world,label,amount) {world.finance.unshift({label,amount,season:world.season,event:world.eventIndex});world.finance=world.finance.slice(0,40);}
+
+export function ensureBallonGalaEvent(world) {
+  if(!world||world.mode!=='career'||world.seasonComplete||world.events.some(event=>event.kind==='gala'))return;
+  const roundIndex=world.events.findIndex(event=>event.kind==='league'&&event.round===8);
+  let index=roundIndex>=0?roundIndex+1:Math.min(world.eventIndex,world.events.length);
+  while(index<world.events.length&&world.events[index].kind!=='league')index++;
+  if(index<world.eventIndex)index=world.eventIndex;
+  world.events.splice(index,0,{id:`gala-${world.season}`,kind:'gala',round:8,date:{day:26,month:10},label:'Gala del Balón de Oro · 26 de octubre'});
+}
+
+function awardBallonGala(world) {
+  const scorers=world.teams.flatMap(team=>team.roster.map(player=>{
+    const titles=team.honours.filter(honour=>honour.season===world.season).length;
+    const goals=player.stats?.goals??0,assists=player.stats?.assists??0,matches=player.stats?.matches??0;
+    return {id:player.id,name:player.name,club:team.name,goals,assists,matches,titles,score:goals*4+assists*3+titles*15+matches*.2};
+  })).filter(player=>player.matches>0);
+  scorers.sort((a,b)=>b.score-a.score||b.goals-a.goals||b.assists-a.assists||a.name.localeCompare(b.name));
+  const tableByClub=new Map();
+  for(const comp of world.competitions.filter(item=>item.kind==='league'))for(const row of standings(world,comp.id)){
+    const saved=tableByClub.get(row.id)??{played:0,wins:0};
+    saved.played+=row.p;saved.wins+=row.w;tableByClub.set(row.id,saved);
+  }
+  const clubs=world.teams.map(team=>{
+    const stats=tableByClub.get(team.id)??{played:0,wins:0};
+    const players=team.roster.length,titles=team.honours.filter(honour=>honour.season===world.season).length;
+    const score=stats.wins*2+stats.played*.35+teamRating(team)*.7+titles*25;
+    return {id:team.id,name:team.name,players,played:stats.played,wins:stats.wins,titles,score};
+  }).sort((a,b)=>b.score-a.score||b.titles-a.titles||b.wins-a.wins||a.name.localeCompare(b.name));
+  const gala={season:world.season,eventId:`gala-${world.season}`,date:'26 de octubre',player:scorers[0]??null,club:clubs[0]??null};
+  world.ballonGala=gala;world.awards??=[];
+  world.awards.push({season:world.season,type:'ballon-dor',winnerId:gala.player?.id??null,winnerName:gala.player?.name??'Sin ganador'});
+  world.awards.push({season:world.season,type:'best-club',winnerId:gala.club?.id??null,winnerName:gala.club?.name??'Sin ganador'});
+  world.awards=world.awards.slice(-60);
+  news(world,'Noche de gala: se entregan los premios de octubre',gala.player&&gala.club?`Balón de Oro: ${gala.player.name}. Mejor club: ${gala.club.name}.`:'La temporada todavía no reúne estadísticas suficientes para elegir ganadores.','trophy');
+  return gala;
+}
 export function award(world,comp,winner) {
   if(comp.winner)return;
   comp.winner=winner;const team=teamById(world,winner);
@@ -248,6 +285,7 @@ export function createPressConference(world,f) {
 
 export function advance(world,manualResult=null) {
   if(world.seasonComplete)return null;
+  ensureBallonGalaEvent(world);
   const fixtures=eventFixtures(world);const own=fixtures.find(f=>f.home===world.userTeam||f.away===world.userTeam);
   if(manualResult&&(!own||manualResult.fixtureId!==own.id||!validResult(manualResult)))throw new Error('Este resultado no corresponde al partido pendiente.');
   const event=world.events[world.eventIndex];
@@ -261,6 +299,7 @@ export function advance(world,manualResult=null) {
       developPlayers(world,rng);
       for(const t of world.teams)for(const p of t.roster)p.fitness=clamp(p.fitness+10,0,100);
     }
+    if(event.kind==='gala')awardBallonGala(world);
     if(world.eventIndex%7===6)aiTransfers(world,rng);
   });
   world.eventIndex++;world.weekDay=0;world.day=(world.day??0)+1;world.updated=Date.now();
@@ -333,14 +372,14 @@ export function buyPlayer(world,playerId,agreedFee=null,loan=false) {
   const item={name:p.name,from:source?.name??'Libre',to:own.name,fee,season:world.season,event:world.eventIndex};world.transferLog.unshift(item);world.transferLog=world.transferLog.slice(0,80);
   addFinance(world,`Fichaje: ${p.name}`,-fee);news(world,`${p.name} ya es de ${own.name}`,loan?`Cesión hasta final de temporada. Refuerzo para ${p.position}.`:`Contrato de cuatro temporadas. Refuerzo para ${p.position}.`,'transfer');unlockAchievements(world);return p;
 }
-export function sellPlayer(world,playerId) {
+export function sellPlayer(world,playerId,discount=.1) {
   if(!transferOpen(world))throw new Error('El mercado está cerrado.');
   const own=teamById(world,world.userTeam),p=own.roster.find(p=>p.id===playerId);
   if(!p)throw new Error('Jugador desconocido.');
   if(p.loan)throw new Error('Un jugador cedido no se puede vender.');
   if(own.roster.length<=8)throw new Error('Necesitas al menos ocho jugadores.');
   if(p.position==='POR'&&own.roster.filter(x=>x.position==='POR').length<=1)throw new Error('Necesitas conservar un portero.');
-  const fee=Math.round(playerValue(p,own)*.9/10000)*10000;
+  const fee=Math.round(playerValue(p,own)*(1-discount)/10000)*10000;
   const buyer=world.teams.filter(t=>t.id!==own.id&&t.roster.length<26&&t.budget>=fee).sort((a,b)=>Math.abs(teamRating(a)-overall(p))-Math.abs(teamRating(b)-overall(p)))[0];
   if(!buyer)throw new Error('No hay un club comprador con presupuesto.');
   preserveLineupSlots(own,new Set([p.id]));own.roster=own.roster.filter(x=>x!==p);own.lineup=own.lineup.filter(id=>id!==p.id);own.budget+=fee;buyer.budget-=fee;buyer.roster.push(p);p.number=freeNumber(buyer);p.contract=3;
@@ -348,6 +387,8 @@ export function sellPlayer(world,playerId) {
   world.transferLog.unshift({name:p.name,from:own.name,to:buyer.name,fee,season:world.season,event:world.eventIndex});world.transferLog=world.transferLog.slice(0,80);
   addFinance(world,`Venta: ${p.name}`,fee);news(world,`${p.name} ficha por ${buyer.name}`,'La operación se ha completado.','transfer');return fee;
 }
+
+export function quickSellPlayer(world,playerId) {return sellPlayer(world,playerId,.25);}
 export function renewPlayer(world,id) {
   const t=teamById(world,world.userTeam),p=t.roster.find(p=>p.id===id);if(!p)throw new Error('Jugador desconocido.');
   const fee=wage(p)*12;if(t.budget<fee)throw new Error('No hay presupuesto para la prima.');

@@ -1,5 +1,5 @@
 import { createTeams, COUNTRIES, teamById, overall, teamRating, playerValue, teamMarketValue, wage, activePlayers, badgeSVG } from './data.js';
-import { createCareer, advance, nextFixture, nextSeason, buyPlayer, sellPlayer, renewPlayer, upgrade, upgradeCost, promoteYouth, promoteAcademyPlayer, dispatchScout, recruitAcademyProspect, scoutDeploymentCost, scoutCapacity, isImportantFixture, createPressConference, transferPrice, changeClub, unlockAchievements } from './career.js';
+import { createCareer, advance, nextFixture, nextSeason, buyPlayer, sellPlayer, quickSellPlayer, renewPlayer, upgrade, upgradeCost, promoteYouth, promoteAcademyPlayer, dispatchScout, recruitAcademyProspect, scoutDeploymentCost, scoutCapacity, isImportantFixture, createPressConference, transferPrice, changeClub, unlockAchievements } from './career.js';
 import { listSlots, loadSlot, saveSlot, deleteSlot, exportSave, importSave, getSettings, setSettings } from './storage.js';
 import { submitOffer, advanceDay, signOffer, counterOffer, counterIncomingOffer, answerIncomingOffer } from './negotiations.js';
 import { MatchSimulation, matchSeed, STATE_LABELS } from './match.js';
@@ -195,7 +195,7 @@ async function exitMatch(){
   game.paused=true;await save({notify:true});stopMatch();closeModal(true);view='home';render();
 }
 async function runMatchday(){
-  if(!world||busy)return;const own=nextFixture(world);if(own){beginMatch(world,own);return;}
+  if(!world||busy)return;const own=nextFixture(world);if(world.events[world.eventIndex]?.kind==='gala'){busy=true;try{advance(world);await save();closeModal(true);view='home';render();modal('GALA DEL BALÓN DE ORO',UI.ballonGalaView(world),{wide:true});}finally{busy=false;}return;}if(own){beginMatch(world,own);return;}
   busy=true;modal('LOS DEMÁS ESTADIOS',`<div class="matchday-animation"><div class="rolling-ball">⚽</div><h2 id="matchday-title">Los equipos saltan al césped…</h2><p>Una nueva jornada se disputa en todo el continente.</p><div class="loading-line"></div></div>`,{closable:false});
   try{
     await new Promise(r=>setTimeout(r,900));document.getElementById('matchday-title').textContent='El balón ya está en juego…';await new Promise(r=>setTimeout(r,900));document.getElementById('matchday-title').textContent='Llegan los resultados de la jornada…';await new Promise(r=>setTimeout(r,800));
@@ -286,7 +286,7 @@ function showOffers(){
 
 async function action(a){
   audio.unlock();audio.play('click');
-  if(pendingMatch&&!game&&/^(buy-|sell-|renew-|upgrade-|invest-|youth$|lineup-|swap-|sign-offer-|dispatch-scout|recruit-report|promote-academy-)/.test(a))throw new Error('Hay una simulación en curso. Termínala antes de modificar la plantilla o el club.');
+  if(pendingMatch&&!game&&/^(buy-|sell-|fast-sell-|renew-|upgrade-|invest-|youth$|lineup-|swap-|sign-offer-|dispatch-scout|recruit-report|promote-academy-)/.test(a))throw new Error('Hay una simulación en curso. Termínala antes de modificar la plantilla o el club.');
   if(a==='close-modal'){closeModal();return;}
   if(a.startsWith('press-answer-')){await answerPressConference(Number(a.slice(13)));return;}
   if(a.startsWith('nav-')){navigate(a.slice(4));return;}
@@ -360,6 +360,8 @@ async function action(a){
   }
   if(a.startsWith('buy-')){const p=buyPlayer(world,a.slice(4));closeModal(true);scheduleSave();render();toast(`${p.name} se incorpora al equipo.`);return;}
   if(a.startsWith('sell-')&&!a.startsWith('sell-confirm-')){const {p,team}=findPlayer(a.slice(5));confirm(`Vender a ${p.name}`,`La mejor oferta de venta es ${money(Math.round(playerValue(p,team)*.9/10000)*10000)}. El jugador saldrá de tu plantilla y un club con presupuesto cubrirá el traspaso.`,'Aceptar oferta',`sell-confirm-${p.id}`);return;}
+  if(a.startsWith('fast-sell-')&&!a.startsWith('fast-sell-confirm-')){const {p,team}=findPlayer(a.slice(10));if(!p||team?.id!==world.userTeam)throw new Error('No se encuentra el jugador de tu plantilla.');const fee=Math.round(playerValue(p,team)*.75/10000)*10000;confirm('Venta rápida',`Venderás a ${p.name} al instante por ${money(fee)}, un 25 % menos de su valor estimado. El mercado debe estar abierto.`,'Vender ahora',`fast-sell-confirm-${p.id}`);return;}
+  if(a.startsWith('fast-sell-confirm-')){const fee=quickSellPlayer(world,a.slice(18));closeModal(true);scheduleSave();render();toast(`Venta rápida completada por ${money(fee)}.`);return;}
   if(a.startsWith('sell-confirm-')){const fee=sellPlayer(world,a.slice(13));closeModal(true);scheduleSave();render();toast(`Venta completada por ${money(fee)}.`);return;}
   if(a.startsWith('renew-')&&!a.startsWith('renew-confirm-')){const {p}=findPlayer(a.slice(6));confirm(`Renovar a ${p.name}`,`La prima de renovación cuesta ${money(wage(p)*12)}. Su contrato se ampliará dos temporadas, hasta un máximo de cinco.`,'Renovar contrato',`renew-confirm-${p.id}`);return;}
   if(a.startsWith('renew-confirm-')){renewPlayer(world,a.slice(14));closeModal(true);scheduleSave();render();toast('Contrato renovado.');return;}
