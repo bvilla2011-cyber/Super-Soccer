@@ -70,7 +70,7 @@
 .deal-emblem{position:absolute;z-index:3;right:calc(50% - 100px);top:25%;display:grid;place-items:center;width:43px;height:43px;border:1px solid #ffe4a2;border-radius:50%;background:linear-gradient(145deg,#f6dc91,#aa7833);color:#19343a;font-size:1.3rem;box-shadow:0 0 24px #f6dc9166;animation:deal-emblem-in .55s .42s both}
 .deal-stage-label{position:absolute;bottom:12px;color:#e7d49b;font-size:.58rem;letter-spacing:.22em;font-weight:900;animation:deal-fade .5s .45s both}
 .deal-sparks{position:absolute;inset:0;pointer-events:none}
-.deal-sparks i{position:absolute;left:calc(50% + (var(--spark) - 3.5)*22px);top:52%;width:4px;height:4px;border-radius:50%;background:#ffe6a0;box-shadow:0 0 8px #ffe6a0;opacity:0;animation:deal-spark .7s .35s ease-out both}
+.deal-sparks i:nth-child(1){margin-left:-77px}.deal-sparks i:nth-child(2){margin-left:-55px}.deal-sparks i:nth-child(3){margin-left:-33px}.deal-sparks i:nth-child(4){margin-left:-11px}.deal-sparks i:nth-child(5){margin-left:11px}.deal-sparks i:nth-child(6){margin-left:33px}.deal-sparks i:nth-child(7){margin-left:55px}.deal-sparks i:nth-child(8){margin-left:77px}.deal-sparks i{position:absolute;left:50%;top:52%;width:4px;height:4px;border-radius:50%;background:#ffe6a0;box-shadow:0 0 8px #ffe6a0;opacity:0;animation:deal-spark .7s .35s ease-out both}
 .deal-kicker{font-size:.62rem;letter-spacing:.18em;color:#e2c97d;font-weight:900}
 .deal-celebration>h2{margin:8px 0 4px;font-size:clamp(1.2rem,4vw,1.9rem);color:#f1d98d;animation:deal-fade .45s .25s both}
 .deal-celebration>p{margin:0;color:var(--muted);line-height:1.6;animation:deal-fade .45s .35s both}
