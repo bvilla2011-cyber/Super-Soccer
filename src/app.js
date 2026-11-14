@@ -297,8 +297,10 @@ async function action(a){
   if(a.startsWith('setup-team-')){setup.teamId=a.slice(11);if(setup.opponent===setup.teamId)setup.opponent=getPreviewTeams().find(t=>t.id!==setup.teamId).id;updateSetupModal();return;}
   if(a==='watch'||a==='matchday'){
     if(!world)return;
+    const f=nextFixture(world);
+    if(!f){await runMatchday();return;}
     if(!pendingMatch&&(world.weekDay??0)<6){await simulateWeek();return;}
-    const f=nextFixture(world);if(f)beginMatch(world,f);else await runMatchday();return;
+    beginMatch(world,f);return;
   }
   if(a==='quick-sim'){await quickSimulate();return;}
   if(a==='matchday'){await runMatchday();return;}
