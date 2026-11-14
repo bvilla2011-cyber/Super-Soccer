@@ -49,3 +49,13 @@ h1,h2,h3,.brand,.btn,.nav-item,.tag,.eyebrow,.tiny{font-family:ArcadeDisplay,Imp
 @keyframes deal-player-enter{from{opacity:0;transform:translateY(48px) scale(.72)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes deal-emblem-pop{0%{opacity:0;transform:scale(.2) rotate(-20deg)}75%{transform:scale(1.12) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0)}}@keyframes deal-text-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes deal-spark-burst{0%,100%{opacity:.25;transform:translateY(5px) rotate(45deg) scale(.65)}50%{opacity:1;transform:translateY(-9px) rotate(135deg) scale(1.1)}}
 @media(max-width:600px){.deal-stage{min-height:250px;padding-top:24px}.deal-player{height:210px}.deal-club-mark{top:25px;left:12px;max-width:43%;font-size:8px}.deal-club-mark .crest{width:30px;height:30px}.deal-emblem{top:29px;right:12px}.deal-kit-meta{margin-left:14px;margin-right:14px}.deal-stage-label{font-size:8px}.deal-celebration>.modal-actions{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){.modal-overlay,.modal,.modal-header,.modal-body,.deal-player,.deal-emblem,.deal-celebration>h2,.deal-sparks i,.matchday-animation{animation:none!important;transition:none!important}}
+/* Straight bottom navigation and compact home news access */
+.game-dock nav{grid-template-columns:repeat(9,minmax(0,1fr));grid-auto-flow:column;align-items:stretch;overflow:hidden}
+.game-dock .nav-item{min-width:0;white-space:nowrap;font-size:clamp(6px,1vw,9px);letter-spacing:0}
+.game-dock .nav-item .game-icon{flex:none}
+.home-head-tools{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex:none;white-space:nowrap}
+.home-news-button{display:grid;place-items:center;width:42px;height:42px;padding:7px;color:var(--cyan);background:#303a83;border:3px solid var(--ink);border-radius:10px;box-shadow:3px 3px 0 var(--ink)}
+.home-news-button .game-icon{width:24px;height:24px}
+.home-news-button:hover{background:var(--yellow);color:var(--ink);transform:translateY(-2px)}
+.home-head-tools .hub-level{flex:none}
+@media(max-width:600px){.game-dock nav{gap:2px}.game-dock .nav-item{padding:4px 1px;font-size:6px}.game-dock .nav-item .game-icon{width:19px;height:19px}.home-head-tools{gap:6px}.home-news-button{width:36px;height:36px;padding:5px}.home-news-button .game-icon{width:21px;height:21px}.screen-home .section-head{gap:8px}.screen-home .section-head h1{font-size:clamp(19px,5vw,25px)}}
