@@ -116,7 +116,7 @@ export function validatePayload(payload) {
   if(w.pendingPressConference){const press=w.pendingPressConference;assert(typeof press.fixtureId==='string'&&fixtureIds.has(press.fixtureId)&&['win','draw','loss'].includes(press.result)&&Array.isArray(press.questions)&&press.questions.length===4&&integer(press.index,0,4),'rueda de prensa.');for(const question of press.questions){assert(typeof question.text==='string'&&Array.isArray(question.answers)&&question.answers.length===3&&(question.target===null||typeof question.target==='string'),'pregunta de prensa.');for(const answer of question.answers)assert(typeof answer.text==='string'&&finite(answer.teamDelta,-10,10)&&finite(answer.playerDelta,-10,10),'respuesta de prensa.');}}
   if(payload.match) {
     const m=payload.match;
-    assert(typeof m.fixtureId==='string'&&fixtureIds.has(m.fixtureId)&&m.snapshot&&Array.isArray(m.snapshot.players)&&m.snapshot.players.length<=20,'partido en curso.');
+    assert(typeof m.fixtureId==='string'&&fixtureIds.has(m.fixtureId)&&m.snapshot&&Array.isArray(m.snapshot.players)&&m.snapshot.players.length<=22,'partido en curso.');
     assert(Array.isArray(m.snapshot.score)&&m.snapshot.score.length===2&&m.snapshot.score.every(n=>integer(n,0,99))&&finite(m.snapshot.clock,0,6000),'marcador en curso.');
     assert(['Entrance','Kickoff','InPlay','Action','HalfTime','FullTime','Shootout'].includes(m.snapshot.state),'estado de partido.');
     assert(m.snapshot.players.every(p=>p&&typeof p.id==='string'&&finite(p.x,-1000,3000)&&finite(p.y,-1000,3000)&&finite(p.vx,-3000,3000)&&finite(p.vy,-3000,3000)),'posiciones en curso.');
