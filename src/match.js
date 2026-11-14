@@ -26,7 +26,7 @@ export class MatchSimulation {
   }
   simulatePeriod(half) {
     const copies=this.teams.map(t=>clone(t));
-    if(half===2)for(const t of copies)t.matchLimit=5-t.roster.filter(p=>this.firstHalf?.players[p.id]?.red).length;
+    if(half===2)for(const t of copies)t.matchLimit=11-t.roster.filter(p=>this.firstHalf?.players[p.id]?.red).length;
     for(const t of copies)for(const p of t.roster) {
       const earlier=this.firstHalf?.players[p.id];
       if(earlier?.red)p.ban=1;
@@ -80,7 +80,7 @@ export class MatchSimulation {
     const was=new Map(this.players.map(p=>[p.id,p]));
     const removed=new Set(Object.entries(this.firstHalf.players).filter(([,s])=>s.red||s.injury).map(([id])=>id));
     const teams=this.teams.map(t=>clone(t));
-    for(const t of teams)t.matchLimit=5-t.roster.filter(p=>this.firstHalf.players[p.id]?.red).length;
+    for(const t of teams)t.matchLimit=11-t.roster.filter(p=>this.firstHalf.players[p.id]?.red).length;
     for(const t of teams)for(const p of t.roster)if(removed.has(p.id))p.ban=1;
     this.players=teams.flatMap((t,i)=>createPlayers(t,i,2)).map(p=>({...p,x:was.get(p.id)?.x??525,y:was.get(p.id)?.y??330}));
     this.clock=2700;this.state='Kickoff';this.stateTime=0;this.paused=false;this.pass=null;this.setBanner('SEGUNDA PARTE','Los equipos cambian de campo.');this.emit('whistle');
@@ -156,7 +156,7 @@ export class MatchSimulation {
         else if(p.side!==e.side&&!p.keeper){x=a.goalX-a.dir*(80+p.index*33);y=225+p.index*50;}
         if(p.keeper&&p.side!==e.side){x=a.goalX-a.dir*20;y=t>3.8?lerp(330,a.shotY,clamp((t-3.8)*2.4,0,1)):clamp(330+(a.shootY-330)*.22,270,390);if(t>4.05&&t<4.8)p.fall=.22;}
       }else {x=scorer.x+(p.side===e.side?-a.dir*35:a.dir*35);y=clamp(scorer.y+(p.index-2)*43,60,600);}
-      if(p.side===e.side&&p.celebrate>0){const angle=p.index/5*Math.PI*2;x=scorer.x-a.dir*28+Math.cos(angle)*34;y=scorer.y+Math.sin(angle)*26;}
+      if(p.side===e.side&&p.celebrate>0){const angle=p.index/11*Math.PI*2;x=scorer.x-a.dir*28+Math.cos(angle)*34;y=scorer.y+Math.sin(angle)*26;}
       this.movePlayer(p,clamp(x,14,1036),clamp(y,30,630),dt,130);
     }
     if(shot) {

@@ -3,12 +3,12 @@ import { clamp, poisson, weighted } from './utils.js';
 
 export function strength(team) {
   const ps=activePlayers(team);
-  const avg=key=>ps.reduce((s,p)=>s+p.attributes[key]*(.68+.32*p.fitness/100)*(.94+.06*p.morale/100),0)/5;
-  const shape=FORMATIONS[team.formation]??FORMATIONS['2-1-1'];
+  const divisor=Math.max(1,ps.length),avg=key=>ps.reduce((s,p)=>s+p.attributes[key]*(.68+.32*p.fitness/100)*(.94+.06*p.morale/100),0)/divisor;
+  const shape=FORMATIONS[team.formation]??FORMATIONS['4-4-2'];
   const tactic=team.tactic==='attacking'?5:team.tactic==='defensive'?-4:0;
   return {attack:avg('shot')*.48+avg('control')*.26+avg('pace')*.26+shape.attack+tactic,
     defense:avg('defense')*.5+avg('keeping')*.28+avg('stamina')*.22+shape.defense-tactic*.55,
-    pass:avg('pass'),fitness:ps.reduce((s,p)=>s+p.fitness,0)/5};
+    pass:avg('pass'),fitness:ps.reduce((s,p)=>s+p.fitness,0)/divisor};
 }
 export function penaltySeries(home,away,rng) {
   let score=[0,0],taken=[0,0];const kicks=[];

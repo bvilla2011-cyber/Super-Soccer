@@ -77,11 +77,11 @@ export function validatePayload(payload) {
     assert(typeof t.name==='string'&&t.name.length<100&&typeof t.code==='string'&&/^[a-z0-9]{1,8}$/i.test(t.code),'nombre de club.');
     assert(Array.isArray(t.colors)&&t.colors.length===2&&t.colors.every(c=>/^#[0-9a-f]{6}$/i.test(c)),'colores del club.');
     assert(finite(t.budget,-1e10,1e12)&&integer(t.division,1,3),'economía o división.');
-    assert(Array.isArray(t.roster)&&t.roster.length>=1&&t.roster.length<=30,'plantilla.');
+    assert(Array.isArray(t.roster)&&t.roster.length>=1&&t.roster.length<=26,'plantilla.');
     if(t.happiness!==undefined)assert(finite(t.happiness,0,100),'felicidad del equipo.');
     if(t.academyPlayers!==undefined){assert(Array.isArray(t.academyPlayers)&&t.academyPlayers.length<=24,'cantera.');for(const p of t.academyPlayers)validatePlayer(p,players);}
-    assert(Array.isArray(t.lineup)&&t.lineup.length<=5&&new Set(t.lineup).size===t.lineup.length,'alineación.');
-    assert(['2-1-1','1-2-1','1-1-2','4-4-2','3-5-2'].includes(t.formation)&&['balanced','attacking','defensive'].includes(t.tactic),'táctica.');
+    assert(Array.isArray(t.lineup)&&t.lineup.length<=11&&new Set(t.lineup).size===t.lineup.length,'alineación.');
+    assert(['2-1-1','1-2-1','1-1-2','4-4-2','4-3-3','4-2-3-1','3-5-2'].includes(t.formation)&&['balanced','attacking','defensive'].includes(t.tactic),'táctica.');
     assert(integer(t.academy,1,5)&&integer(t.trainingLevel,1,5)&&Array.isArray(t.honours)&&Array.isArray(t.form)&&t.form.length<=5&&t.form.every(f=>['V','E','D'].includes(f)),'instalaciones.');
     for(const p of t.roster)validatePlayer(p,players);
     assert(t.lineup.every(id=>t.roster.some(p=>p.id===id)),'alineación ajena a la plantilla.');

@@ -12,10 +12,10 @@ export function news(world,title,body='',type='club') {
 export function createCareer({teamId='es-2',manager='Míster',difficulty='club',seed=Date.now(),mode='career'}={}) {
   const created=createTeams(seed);
   if(!created.teams.some(t=>t.id===teamId)) throw new Error('Club desconocido.');
-  const world={version:SAVE_VERSION,economyVersion:ECONOMY_VERSION,rosterVersion:2,featuresVersion:2,seed:seed>>>0,rngState:created.rngState,season:2026,userTeam:teamId,manager:String(manager).slice(0,32)||'Míster',difficulty,mode,teams:created.teams,freeAgents:[],fixtures:[],competitions:[],events:[],eventIndex:0,day:0,weekDay:0,offers:[],scoutingMissions:[],scoutingReports:[],pendingPressConference:null,scoutSequence:1,seasonComplete:false,news:[],history:[],finance:[],transferLog:[],trophies:[],reputation:20,managerStats:{matches:0,wins:0,draws:0,losses:0,goals:0,against:0,simulated:0,played:0},trainingFocus:'balanced',created:Date.now(),updated:Date.now(),achievements:[],nextPlayerId:1};
+  const world={version:SAVE_VERSION,economyVersion:ECONOMY_VERSION,rosterVersion:3,featuresVersion:2,seed:seed>>>0,rngState:created.rngState,season:2026,userTeam:teamId,manager:String(manager).slice(0,32)||'Míster',difficulty,mode,teams:created.teams,freeAgents:[],fixtures:[],competitions:[],events:[],eventIndex:0,day:0,weekDay:0,offers:[],scoutingMissions:[],scoutingReports:[],pendingPressConference:null,scoutSequence:1,seasonComplete:false,news:[],history:[],finance:[],transferLog:[],trophies:[],reputation:20,managerStats:{matches:0,wins:0,draws:0,losses:0,goals:0,against:0,simulated:0,played:0},trainingFocus:'balanced',created:Date.now(),updated:Date.now(),achievements:[],nextPlayerId:1};
   withRandom(world,rng=>{for(let i=0;i<30;i++)world.freeAgents.push(makePlayer(rng,`free-${world.nextPlayerId++}`,rng.int(58,82),rng.pick(['POR','DEF','MED','DEL'])));});
   setupSeason(world);
-  news(world,`Empieza tu historia en ${teamById(world,teamId).name}`,`La directiva confía en ${world.manager}. Prepara el cinco titular, planifica los fichajes y dirige al equipo desde el banquillo.`);
+  news(world,`Empieza tu historia en ${teamById(world,teamId).name}`,`La directiva confía en ${world.manager}. Prepara el once titular, planifica los fichajes y dirige al equipo desde el banquillo.`);
   return world;
 }
 export function rebaseCareerEconomy(world) {
@@ -51,6 +51,35 @@ export function rebaseCareerEconomy(world) {
       team.academyPlayers??=[];
     }
     world.scoutingMissions??=[];world.scoutingReports??=[];world.pendingPressConference??=null;world.scoutSequence??=1;world.featuresVersion=2;changed=true;
+  }
+  if((world.rosterVersion??0)<3) {
+    const rng=random(world.rngState);
+    const playerIds=new Set([...(world.teams??[]).flatMap(team=>[...(team.roster??[]),...(team.academyPlayers??[])]),...(world.freeAgents??[])].map(player=>player.id));
+    const targetCounts={POR:3,DEF:8,MED:8,DEL:7};
+    const starterRoles=['POR','DEF','DEF','DEF','DEF','MED','MED','MED','MED','DEL','DEL'];
+    for(const team of world.teams??[]) {
+      const counts=()=>Object.fromEntries(Object.keys(targetCounts).map(position=>[position,team.roster.filter(player=>player.position===position).length]));
+      let sequence=0;
+      while(team.roster.length<26) {
+        const current=counts();
+        const position=Object.keys(targetCounts).sort((a,b)=>current[a]/targetCounts[a]-current[b]/targetCounts[b])[0];
+        let id;
+        do{id=`${team.id}-reserve-${sequence++}`;}while(playerIds.has(id));
+        const player=makePlayer(rng,id,Math.max(48,teamRating(team)-rng.int(3,15)),position);
+        player.number=freeNumber(team);team.roster.push(player);playerIds.add(id);
+      }
+      const preferred=new Set(team.lineup??[]),selected=new Set();
+      team.lineup=starterRoles.map(position=>{
+        const available=team.roster.filter(player=>player.position===position&&!selected.has(player.id)&&!player.injury&&!player.ban);
+        const candidates=available.length?available:team.roster.filter(player=>player.position===position&&!selected.has(player.id));
+        candidates.sort((a,b)=>Number(preferred.has(b.id))-Number(preferred.has(a.id))||overall(b)-overall(a));
+        const player=candidates[0];
+        if(player)selected.add(player.id);
+        return player?.id;
+      }).filter(Boolean);
+      team.formation='4-4-2';delete team.matchLimit;
+    }
+    world.rngState=rng.state();world.rosterVersion=3;changed=true;
   }
   return changed;
 }
@@ -279,7 +308,7 @@ export function transferPrice(p,source,target) {
 const freeNumber=t=>{for(let n=2;n<100;n++)if(!t.roster.some(p=>p.number===n))return n;return 99;};
 export function buyPlayer(world,playerId,agreedFee=null,loan=false) {
   if(!transferOpen(world))throw new Error('El mercado está cerrado. Abre al inicio y a mitad de temporada.');
-  const own=teamById(world,world.userTeam);if(own.roster.length>=20)throw new Error('La plantilla admite 20 jugadores. Vende o cede una plaza.');
+  const own=teamById(world,world.userTeam);if(own.roster.length>=26)throw new Error('La plantilla admite 26 jugadores. Vende o cede una plaza.');
   const source=world.teams.find(t=>t.id!==own.id&&t.roster.some(p=>p.id===playerId));
   const p=source?.roster.find(p=>p.id===playerId)??world.freeAgents.find(p=>p.id===playerId);
   if(!p)throw new Error('El jugador ya no está disponible.');
@@ -301,7 +330,7 @@ export function sellPlayer(world,playerId) {
   if(own.roster.length<=8)throw new Error('Necesitas al menos ocho jugadores.');
   if(p.position==='POR'&&own.roster.filter(x=>x.position==='POR').length<=1)throw new Error('Necesitas conservar un portero.');
   const fee=Math.round(playerValue(p,own)*.9/10000)*10000;
-  const buyer=world.teams.filter(t=>t.id!==own.id&&t.roster.length<20&&t.budget>=fee).sort((a,b)=>Math.abs(teamRating(a)-overall(p))-Math.abs(teamRating(b)-overall(p)))[0];
+  const buyer=world.teams.filter(t=>t.id!==own.id&&t.roster.length<26&&t.budget>=fee).sort((a,b)=>Math.abs(teamRating(a)-overall(p))-Math.abs(teamRating(b)-overall(p)))[0];
   if(!buyer)throw new Error('No hay un club comprador con presupuesto.');
   own.roster=own.roster.filter(x=>x!==p);own.lineup=own.lineup.filter(id=>id!==p.id);own.budget+=fee;buyer.budget-=fee;buyer.roster.push(p);p.number=freeNumber(buyer);p.contract=3;
   for(const offer of world.offers??[])if(offer.direction==='incoming'&&offer.playerId===p.id&&['incoming','countered','counter-accepted','counter-rejected'].includes(offer.status)){offer.status='unavailable';offer.unread=true;}
@@ -361,7 +390,7 @@ export function promoteAcademyPlayer(world,playerId) {
   const team=teamById(world,world.userTeam),index=team.academyPlayers.findIndex(p=>p.id===playerId),player=team.academyPlayers[index];
   if(!player)throw new Error('No se encuentra en la cantera.');
   if(player.age<15)throw new Error('Solo se puede ascender al primer equipo a partir de los 15 años.');
-  if(team.roster.length>=20)throw new Error('La plantilla del primer equipo ya tiene 20 jugadores.');
+  if(team.roster.length>=26)throw new Error('La plantilla del primer equipo ya tiene 20 jugadores.');
   team.academyPlayers.splice(index,1);player.number=freeNumber(team);player.contract=5;team.roster.push(player);team.youthSeason=world.season;news(world,`${player.name} sube al primer equipo`,`Con ${player.age} años, da el salto desde la cantera.`,'youth');unlockAchievements(world);return player;
 }
 export function promoteYouth(world) {
@@ -423,7 +452,7 @@ export function nextSeason(world) {
         p.potential=Math.max(overall(p),p.potential-(p.age>31?1:0));
       }
       t.roster=t.roster.filter(p=>!leaving.includes(p));t.lineup=t.lineup.filter(id=>t.roster.some(p=>p.id===id));
-      while(t.roster.length<10||!t.roster.some(p=>p.position==='POR')) {
+      while(t.roster.length<26||!t.roster.some(p=>p.position==='POR')) {
         const p=makePlayer(rng,`regen-${world.nextPlayerId++}`,rng.int(49,65)+t.academy*2,!t.roster.some(p=>p.position==='POR')?'POR':rng.pick(['DEF','MED','DEL']));p.age=rng.int(17,20);p.potential=clamp(overall(p)+rng.int(8,21),overall(p),97);p.number=freeNumber(t);t.roster.push(p);
       }
       t.budget+=t.division===1?4_000_000:t.division===2?900_000:450_000;t.form=[];

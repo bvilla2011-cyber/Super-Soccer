@@ -14,7 +14,7 @@ export function submitOffer(world,playerId,fee,type='transfer') {
   if(!['transfer','loan'].includes(type))throw new Error('Tipo de oferta no válido.');
   if(type==='loan'&&!source)throw new Error('No se puede ceder a un jugador libre.');
   if(!Number.isSafeInteger(fee)||fee<0||fee>own.budget)throw new Error('Introduce una oferta válida dentro de tu presupuesto.');
-  if(own.roster.length>=20)throw new Error('Tu plantilla está completa.');
+  if(own.roster.length>=26)throw new Error('Tu plantilla está completa.');
   const offers=world.offers??(world.offers=[]);
   if(offers.some(o=>o.playerId===playerId&&['pending','accepted'].includes(o.status)))throw new Error('Ya tienes una negociación abierta por este jugador.');
   const asking=transferPrice(player,source,own);
@@ -98,7 +98,7 @@ export function answerIncomingOffer(world,id,decision) {
   const fee=decision==='accept-original'&&offer.status==='incoming'?offer.fee:decision==='accept-counter'&&offer.status==='counter-accepted'?offer.counter:decision==='accept-final'&&offer.status==='counter-rejected'?offer.buyerCounter:null;
   if(!fee)throw new Error('La oferta ya no se puede aceptar.');
   const own=teamById(world,world.userTeam),buyer=teamById(world,offer.buyerId),player=own.roster.find(p=>p.id===offer.playerId);
-  if(!buyer||!player||buyer.roster.length>=20||buyer.budget<fee)throw new Error('El comprador ya no puede completar el fichaje.');
+  if(!buyer||!player||buyer.roster.length>=26||buyer.budget<fee)throw new Error('El comprador ya no puede completar el fichaje.');
   if(own.roster.length<=8||(player.position==='POR'&&own.roster.filter(p=>p.position==='POR').length<=1))throw new Error('Necesitas conservar al menos ocho jugadores y un portero.');
   own.roster=own.roster.filter(p=>p.id!==player.id);own.lineup=own.lineup.filter(playerId=>playerId!==player.id);own.budget+=fee;buyer.budget-=fee;player.number=freeNumber(buyer);player.contract=3;buyer.roster.push(player);
   world.finance.unshift({label:`Venta: ${player.name}`,amount:fee,season:world.season,event:world.eventIndex});world.finance=world.finance.slice(0,40);
