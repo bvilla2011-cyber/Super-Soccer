@@ -375,11 +375,12 @@ export function preserveLineupSlots(team,departingIds) {
 }
 export function buyPlayer(world,playerId,agreedFee=null,loan=false) {
   if(!transferOpen(world))throw new Error('El mercado está cerrado. Abre al inicio y a mitad de temporada.');
-  const own=teamById(world,world.userTeam);if(own.roster.length>=26)throw new Error('La plantilla admite 26 jugadores. Vende o cede una plaza.');
+  const own=teamById(world,world.userTeam);
   const source=world.teams.find(t=>t.id!==own.id&&t.roster.some(p=>p.id===playerId));
   const p=source?.roster.find(p=>p.id===playerId)??world.freeAgents.find(p=>p.id===playerId);
   if(!p)throw new Error('El jugador ya no está disponible.');
   if(p.loan)throw new Error('Este jugador ya está cedido.');
+  if(own.roster.length>=26)throw new Error('La plantilla admite 26 jugadores. Vende o cede una plaza.');
   if(loan&&!source)throw new Error('Los agentes libres no pueden llegar cedidos.');
   if(source&&(source.roster.length<=8||(p.position==='POR'&&source.roster.filter(x=>x.position==='POR').length<=1)))throw new Error('El club vendedor no acepta perder otro jugador en esa posición.');
   const fee=agreedFee??transferPrice(p,source,own);if(!Number.isFinite(fee)||fee<0||own.budget<fee)throw new Error('Presupuesto insuficiente para este fichaje.');
