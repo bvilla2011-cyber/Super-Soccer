@@ -53,3 +53,8 @@
 @keyframes gala-progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @media(max-width:560px){.ballon-gala{padding:14px 12px}.gala-awards{grid-template-columns:1fr;gap:10px}.gala-award{min-height:145px;padding:14px 10px}.gala-stage{height:180px;margin-top:12px}.gala-intro p{font-size:.75rem}}
 @media(prefers-reduced-motion:reduce){.ballon-gala *,.ballon-gala *:before,.ballon-gala *:after{animation:none!important}.gala-curtain{display:none}.gala-spotlights i{opacity:.75}.gala-podium,.gala-award,.gala-stage,.gala-intro{opacity:1;transform:none}.gala-podium{transform:translateX(-50%)}.gala-progress i{transform:none}}
+
+.saved-game-picker{display:grid;gap:10px;margin-top:16px}
+.saved-game-choice{display:flex;width:100%;align-items:center;justify-content:space-between;gap:14px;padding:15px 17px;border:1px solid var(--line);border-radius:7px;background:#1a383c;text-align:left;color:var(--text)}
+.saved-game-choice:hover{border-color:#dfbd69;background:#214348}
+.saved-game-choice>span{display:grid;gap:5px}.saved-game-choice small{color:var(--muted);font-size:.76rem}.saved-game-choice>strong{color:#f0d27e}
