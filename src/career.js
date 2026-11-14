@@ -495,11 +495,11 @@ export function promoteAcademyPlayer(world,playerId) {
   const team=teamById(world,world.userTeam),index=team.academyPlayers.findIndex(p=>p.id===playerId),player=team.academyPlayers[index];
   if(!player)throw new Error('No se encuentra en la cantera.');
   if(player.age<15)throw new Error('Solo se puede ascender al primer equipo a partir de los 15 años.');
-  if(team.roster.length>=26)throw new Error('La plantilla del primer equipo ya tiene 20 jugadores.');
+  if(team.roster.length>=26)throw new Error('La plantilla del primer equipo ya tiene 26 jugadores.');
   team.academyPlayers.splice(index,1);player.number=freeNumber(team);player.contract=5;team.roster.push(player);team.youthSeason=world.season;news(world,`${player.name} sube al primer equipo`,`Con ${player.age} años, da el salto desde la cantera.`,'youth');unlockAchievements(world);return player;
 }
 export function promoteYouth(world) {
-  const t=teamById(world,world.userTeam);if(t.youthSeason===world.season)throw new Error('Ya has ascendido a la promesa de esta temporada.');if(t.roster.length>=20)throw new Error('No quedan plazas en la plantilla.');
+  const t=teamById(world,world.userTeam);if(t.youthSeason===world.season)throw new Error('Ya has ascendido a la promesa de esta temporada.');if(t.roster.length>=26)throw new Error('La plantilla ya tiene 26 jugadores. Libera una plaza antes de ascender a un juvenil.');
   const p=withRandom(world,rng=>{const p=makePlayer(rng,`youth-${world.nextPlayerId++}`,rng.int(45,58)+t.academy*3,rng.pick(['POR','DEF','MED','DEL']));p.age=17;p.potential=clamp(overall(p)+rng.int(10,19)+t.academy*2,overall(p),97);return p;});
   p.number=freeNumber(t);p.contract=5;t.roster.push(p);t.youthSeason=world.season;news(world,`La cantera presenta a ${p.name}`,`${p.age} años, posición ${p.position}. Su historia acaba de empezar.`,'youth');return p;
 }
