@@ -11,7 +11,7 @@ import { simulateMatch } from './simulation.js';
 
 const root=document.getElementById('app'),modalRoot=document.getElementById('modal-root');
 let world=null,view='landing',slot=1,slots=[],saveStatus='Guardado',pendingMatch=null,game=null,renderer=null,frameId=0,matchContext=null,busy=false,saveInFlight=false,lastCheckpoint=0;
-let setup={country:'es',division:1,teamId:'es-2',manager:'Biel',difficulty:'club',slot:1,mode:'career',opponent:'es-1'};
+let setup={country:'es',division:1,teamId:'es-2',manager:'',difficulty:'club',slot:1,mode:'career',opponent:'es-1'};
 const previewTeams=createTeams(42).teams;
 let filters={page:0,sort:'rating'},competition=null,compTab='table',calendarAll=false,calendarEvent=null,settings=getSettings(),modalStack=[],lastFocus=null,saveTimer=null,searchTimer=null;
 const audio=new Audio(settings);
@@ -438,4 +438,5 @@ async function offlineSetup(){
 render();
 refreshSlots().then(render).catch(error=>toast(`No se pudieron leer los guardados: ${error.message}`,true));
 offlineSetup();
+
 
