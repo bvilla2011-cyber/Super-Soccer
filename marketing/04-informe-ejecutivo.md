@@ -1,29 +1,28 @@
-# Informe ejecutivo — Temporada 0 (14-11-2026)
+# Informe ejecutivo — 14 de noviembre de 2026
 
-## Estado
-Repositorio verificado: bvilla2011-cyber/Super-Soccer. Rama marketing-campana. El README confirma una experiencia de gestión de fútbol con partidos estadísticos animados, plantillas ficticias, gestión de equipos, mercado, cantera, carrera y guardado local. No es un juego de control directo. La presencia de build/PWA y configuración de publicación no prueba que exista un lanzamiento público activo; por eso no se afirma «juega ahora».
-Metricool: Instagram y TikTok uniformerstudio conectados; YouTube no aparece.
-Fecha y URL oficial: sin confirmar.
+## Dirección creativa
+Se reemplaza el concepto previo «La última fila» por **«El navegador es una ventana»**. La nueva línea no usa aula, profe, alumnos ni el gancho/composición del vídeo existente. Se apoya en una ventana geométrica que se transforma en paisajes low-poly y escenarios de gestión. La fecha de lanzamiento y la URL siguen sin confirmar; la campaña cierra en «Próximamente / Síguenos».
 
-## Entregado en esta rama
-Biblia de campaña/personajes, guiones y storyboards de la Fase 1, mapa de contenido de 8 semanas, copys iniciales, UTMs, propuesta Appwrite separada, medición y ficha de compatibilidad. Sin cambios de código del juego.
+## Hechos y límites
+Metricool muestra un vídeo de clase programado el 14-11 a las 19:00 en Instagram y TikTok; no se modifica y no choca con el periodo 16–29. Instagram y TikTok están conectados; YouTube no aparece conectado. El conector de publicaciones no permitió consultar el historial ya publicado. El README de SUPER SOCCER describe un juego de gestión con simulación animada; la web pública no queda confirmada. El cliente confirma que la beta todavía no es jugable. Todo arte futbolístico se etiqueta como conceptual.
 
-## Programación y borradores
-Cero publicaciones programadas: aún no hay MP4 finales, voz, subtítulos temporizados, fechas de calendario ni URL. Las piezas de lanzamiento, cuenta atrás, Evento de la última fila y CTA «Juega ahora» quedan bloqueadas hasta fecha y web confirmadas. Guiones no equivalen a borradores dentro de Metricool. YouTube Shorts no puede programarse mientras la cuenta no esté conectada.
+## Material producido
+Diez clips verticales 1080×1920 a 30 fps (nueve de 21–24 s y una insignia de 71 s), versiones con y sin subtítulos, nueve guiones cortos más guion insignia, SRT, scripts de rehacer y cinco gráficos para Instagram. Son previsualizaciones de motion graphics low-poly generadas con Python/FFmpeg; no son capturas del juego ni una cinemática final de nivel AAA. La voz local `flite/slt` usa un modelo anglófono, no verificado para español. El SRT muestra dos palabras y usa tiempos estimados, no alineación real.
 
-## Producción no disponible
-Esta sesión no tiene herramientas de generación/renderizado de vídeo ni de voz/audio, así que no hay MP4/SRT ni música exportados. El plan permite producirlos más adelante con HyperFrames o Python/ffmpeg. El repositorio ya incluye audio procedural original del juego; eso no es una pista entregable para la campaña. No se ha añadido música externa sin licencia.
+## Programación
+**Programadas: 0.** El conector de Metricool no expone carga de medios y requiere un archivo en cada Reel/TikTok. El calendario/copy están listos en `02-calendario-copys.md`, pero no se cargaron ficheros ni se crearon publicaciones simuladas. La pieza insignia queda expresamente sin programar hasta que el cliente dé su visto bueno. YouTube Shorts requiere conectar la cuenta. No se usan enlaces UTM ni fecha inventada.
 
-## Appwrite
-No se creó proyecto ni datos. El contexto muestra únicamente proyectos de otros juegos y no ofrece endpoint para crear un proyecto desde el operador. Se incluye esquema aislado para implementar cuando pueda crearse el proyecto dedicado; no se modificaron bases actuales.
+## Técnica y audio
+Node 24, Python 3.12 y FFmpeg 7 disponibles. La descarga/instalación de HyperFrames no respondió; se siguió la alternativa Python/FFmpeg. El audio mezcla voz sintética y tonos originales creados con FFmpeg. El hero dura 71,1 s y mide aproximadamente -14,2 LUFS integrado. Se verificaron resolución 1080×1920, 30 fps y reproducción de fotogramas de muestra. La voz y los subtítulos aún requieren verificación humana; no aprobar para publicación tal como están.
 
 ## Pasos manuales
-1. Confirma URL y fecha objetivo después de verificar que web y juego se publican.
-2. Genera voz, música original y vídeo final desde los guiones; añade logo y captura auténtica de la build concreta. Exporta MP4 1080x1920 a 30 fps y subtítulos revisados.
-3. Conecta YouTube a Metricool si quieres Shorts; carga los archivos y programa en hora Europe/Madrid.
-4. Crea el proyecto Appwrite aislado y configura la Function según esquema; no usar los proyectos de otros juegos.
+1. Ver la insignia y confirmar si apruebas concepto/guion; la exportación actual necesita voz española y subtítulos sincronizados.
+2. Si se aprueba la dirección, reemplazar voz y revisar los diez cortes antes de publicar.
+3. Confirmar URL/fecha cuando existan; conectar YouTube a Metricool si se desean Shorts.
+4. Cargar los archivos a Metricool y programar el calendario; incluir UTM únicamente al confirmar el dominio.
+5. Revisar métricas el 22 de noviembre y ajustar las piezas restantes según datos.
 
-## Próximos pasos recomendados
-1. Aprobar/ajustar biblia y producir T01-T03 como piloto antes de escalar.
-2. Verificar publicación real de la web y preparar captura de juego desde la build disponible.
-3. Medir retención/compartidos de los pilotos y ajustar el resto del calendario.
+## Tres próximos pasos
+1. Validar voz española y subtítulos palabra a palabra.
+2. Cargar y programar piezas revisadas en Metricool; revisar aparte la aprobación de la insignia.
+3. Confirmar publicación real de la web antes de CTA de acceso.
