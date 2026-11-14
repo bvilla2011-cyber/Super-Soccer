@@ -1,74 +1,73 @@
-# Guiones y storyboards — Temporada 0
-Estado: PREPRODUCCIÓN. No hay MP4/voz generados en este entorno. No publicar ni simular que existen.
+# Guiones y storyboards — Campaña de 14 días
 
-## Fase 1 — Rumor (semana 1-2)
-### T01 — «La burbuja» (9 s)
-**Apertura:** plano macro de una burbuja suspendida, reflejando una cancha abstracta; no mostrar logo grande.
-**VO:** «La clase sigue. La última fila… también.»
-**Planos:** 0-2 burbuja vibra con un silbido original; 2-5 reflejo de líneas de cancha atraviesa el aula; 5-8 Codo se mueve un milímetro; 8-9 corte a negro, sello discreto UniFormer Studio.
-**Texto:** «¿Lo has visto?» / «Descubre el estudio».
-### T02 — «Tres toques» (8 s)
-**Apertura:** tres golpecitos en una mesa forman ondas poligonales. No mostrar pantalla de juego.
-**VO:** «No era el timbre.»
-**Planos:** mesa vacía; tres ondas de luz; sombra de Pixel cruza la pared; corte seco a logo pequeño.
-**Texto:** «Algo se mueve al fondo.» / «Síguenos».
-### T03 — «El profe se gira» (10 s)
-**Apertura:** marcador digital de aula cambia solo de 1816 a 90:00; sin interfaz de terceros.
-**VO:** PROFE: «En el año 1816…» pausa. «¿Quién ha puesto el cronómetro?»
-**Planos:** marcador; paneo a las siluetas; Burbuja hace una microburbuja; firma discreta.
-**Texto:** «Última fila. Próximamente.» (marca en discreto).
+**Estado de medios:** MP4 de previsualización generados en Python/FFmpeg. La voz disponible es FFmpeg flite «slt», un modelo anglófono; pronuncia español de forma no validada. Los SRT muestran dos palabras por vez, con tiempos estimados, no alineados palabra a palabra. Revisión de voz y subtítulos pendiente antes de publicar. Los vídeos son arte promocional animado, no gameplay.
 
-## Fase 2 — Presentación
-### V1 «La última fila» (52 s; borrador, fecha/URL no necesarias)
-0-2 hook: PROFE «En el año 1816… alguien ya va por el minuto 90.»
-2-12 aula y explicación de historia en tono monótono; cámara retrocede.
-12-21 revela Burbuja dormido a la izquierda; Codo en el centro dibuja una formación con migas de goma (sin mostrar marcas).
-21-32 Pixel enseña en su portátil una pantalla abstracta de prototipo. No mostrar gameplay hasta capturar el repositorio real y confirmar el build representado.
-32-43 PROFE mira al fondo: «¿Todo claro?» Codo: «Clarísimo. En el descanso lo ponemos a prueba.»
-43-50 tres personajes miran a cámara; ritmo y luz crecen.
-50-52 logo UniFormer Studio; «Síguenos para descubrir el estudio».
-**Nota:** no decir que el juego es jugable/está publicado.
+## V01 — Una pestaña puede ser un mundo (23 s)
+**Gancho:** «El navegador no es solo para buscar cosas.»  
+**Voz:** «El navegador no es solo para buscar cosas. También puede ser el principio de una partida. En UniFormer Studio estamos preparando una web de juegos propios para abrir desde el navegador, sin instalar nada. La web todavía no está publicada. Síguenos y te contamos cuándo se abre esta ventana.»  
+**Pantalla:** cursor enciende una ventana; polígonos forman un paisaje; firma de estudio al final.  
+**CTA:** Descubre el estudio.
 
-### V2 «Cero instalaciones» (33 s; bloqueado hasta demo web real)
-Acción: equipo modesto, navegador genérico sin marcas, interfaz ficticia de acceso denegado se fragmenta y da paso a la web real solo cuando exista. VO: «Una idea, un navegador y listo para descubrir. Diseñado pensando también en equipos modestos; cada centro decide qué permite.» CTA: «Próximamente · enlace en la bio». Sin simular compatibilidad ni acceso real.
+## V02 — ¿Instalar? Hoy no toca (24 s)
+**Gancho:** «Descargas, instaladores, espacio ocupado… pausa.»  
+**Voz:** «Descargas, instaladores, espacio ocupado… pausa. UniFormer Studio prepara juegos propios para jugar desde el navegador, sin instalar nada. Pensamos también en equipos modestos, aunque cada centro decide qué permite y la compatibilidad final depende del equipo. La web aún no está publicada. Síguenos para descubrirla.»  
+**Pantalla:** tarjetas angulares se pliegan hacia un navegador genérico; el cursor activa la luz verde.  
+**CTA:** Descubre el estudio.
 
-### Mini-serie «Los de la última fila» — 6 x 15 s
-E01 «La burbuja tiene VAR»: burbuja refleja una jugada imaginaria; Burbuja despierta en el momento equivocado.
-E02 «Codo táctico»: Codo dibuja una alineación en el vaho de la ventana; se borra al abrirse.
-E03 «El examen»: Pixel pregunta al profe si la táctica entra; «solo si la explicas».
-E04 «Última jugada»: todos dicen que es la última; Burbuja por fin se despierta.
-E05 «El comentarista»: Codo narra el recreo como final épica, sin afirmar gameplay real.
-E06 «Turno de Pixel»: la pandilla acuerda probar ideas en tiempo libre; la pantalla permanece genérica hasta tener captura real.
-CTA rotatorio: «Descubre el estudio» / «Síguenos» / «Próximamente».
+## V03 — Un partido desde el banquillo (22 s)
+**Gancho:** «¿Y si diriges el partido sin manejar a cada jugador?»  
+**Voz:** «SUPER SOCCER es nuestro primer proyecto. Es una beta en desarrollo: todavía no se puede jugar. El repositorio describe un juego de gestión donde preparas la plantilla y observas una simulación animada del partido. No controlas a los futbolistas. Próximamente te enseñamos más.»  
+**Pantalla:** campo conceptual low-poly, rótulo «Arte conceptual · beta».  
+**CTA:** Próximamente.
 
-## Fase 3 — Expectación
-### Tráiler hero (82 s; estructura coral distinta de V1)
-0-8: oscuridad, vibración de mesa, voz: «Hay lugares que parecen quietos.»
-8-20: cada personaje en su espacio; motivos de sonido separados.
-20-36: acciones sincronizadas (burbuja, marcador de Codo, Pixel dibujando una cancha).
-36-52: cámara encadena detalles de aula, ventana y portátil; música original aumenta.
-52-68: los cuatro hacen equipo en el recreo; el profe les deja sitio y sigue caminando.
-68-78: destellos de identidad del estudio; montaje de tensión.
-78-82: logo, «UniFormer Studio · Próximamente».
-Evitar escenas repetidas de V1; gameplay solo con captura real del build y aprobación factual.
+## V04 — Cinco contra cinco, en pantalla (22 s)
+**Gancho:** «Diez siluetas. Una jugada.»  
+**Voz:** «En la retransmisión descrita por el proyecto aparecen cinco jugadores por equipo: portero y cuatro jugadores de campo. La cámara sigue la jugada mientras la simulación calcula el encuentro. Esto es un avance del proyecto, no una invitación a jugar ya: SUPER SOCCER sigue en beta.»  
+**Pantalla:** cinco figuras por lado en tablero abstracto; sin escudos ni uniformes de clubes reales.  
+**CTA:** Próximamente.
 
-### V3 «SUPER SOCCER» (35 s; borrador hasta captura del juego)
-Usar solo captura real de una versión identificada. El README dice gestión de clubes ficticios y retransmisión estadística animada Canvas 2D con cinco jugadores por equipo, cambios al descanso, velocidades, pausa y pantalla completa. Mostrar una simulación real y rotular «gestiona la plantilla; observa la simulación». Pantalla final «SUPER SOCCER · Próximamente». No usar controles directos, clubes oficiales, fechas o mecánicas fuera de README/build.
+## V05 — El descanso también cuenta (22 s)
+**Gancho:** «La segunda parte se prepara.»  
+**Voz:** «En SUPER SOCCER, el descanso sirve para preparar el cinco de la segunda parte. La simulación tiene en cuenta esos cambios al calcular el siguiente tramo. Es gestión y retransmisión animada, no control directo de cada futbolista. Sigue a UniFormer Studio para ver cómo evoluciona la beta.»  
+**Pantalla:** una pizarra poligonal se convierte en campo y recoloca cinco posiciones.  
+**CTA:** Próximamente.
 
-### V4 «En el recreo» (40 s; dramatización, no gameplay)
-Empieza con la pelota golpeando una mochila (sin peligro); timbre libre, reloj gráfico ficticio 3:00, cortes a reacción del grupo, remate cómico antes de la segunda señal. Identificar el reloj como ficción visual. Si el juego no está público, no presentar la acción como partida real.
+## V06 — Un partido. Cuatro ritmos (21 s)
+**Gancho:** «¿A qué velocidad verías el final?»  
+**Voz:** «El repositorio describe velocidades de retransmisión 1×, 2×, 4× y 8×, además de pausa y pantalla completa. Son controles del entrenador dentro del proyecto; la beta aún no está disponible para jugar. ¿Qué ritmo elegirías para ver una final? Síguenos y pronto habrá más.»  
+**Pantalla:** números se iluminan en secuencia mientras se desplaza el campo.  
+**CTA:** Próximamente.
 
-## Fase 4 — Lanzamiento (condicionado)
-### Cuenta atrás D-7 a D-1 — siete piezas distintas, 8 s cada una
-D-7 «Siete»: siete reflejos de luz; D-6 «La ventana»: la cortina dibuja una portería; D-5 «Codo»: un dedo marca un pase en el aire; D-4 «Burbuja»: la burbuja refleja el logo; D-3 «Pixel»: tecla luminosa sin interfaz real; D-2 «Profe»: «Mañana…» y se interrumpe; D-1 «La fila»: los cuatro se levantan y miran al horizonte. Todas bloqueadas hasta fecha confirmada; usar fechas reales solo tras confirmación.
-### Evento última fila (22 s + encuesta; D-1)
-Cuenta atrás animada de 3-2-1 sin fecha/destino inventados; cierre: «¿Qué quieres ver primero?» encuesta anónima, sin login ni datos personales. Requiere app/web instrumentada y fecha confirmada.
-### V6 «Juega ahora» (28 s; totalmente bloqueado)
-Solo tras publicación confirmada: planos auténticos de la web y juego, CTA a URL oficial. No simular botón operativo. 
-### Tres recortes V6
-R1 pregunta: «¿Qué gestionarías primero?»; R2 reto: «¿Cuántos eventos alcanzas a ver?» (no competir con usuarios/score fabricado); R3 humor: el profe reacciona a una celebración real del juego. Publicar únicamente si los clips provienen de la compilación aprobada.
-### Semana 8
-Recopilar mejores momentos solo con permiso y ocultar identificadores; respuesta a preguntas sin datos de menores; anticipo de Temporada 1.
+## V07 — 188 clubes. Un universo ficticio (23 s)
+**Gancho:** «Este universo de fútbol no usa plantillas reales.»  
+**Voz:** «El README del proyecto describe 188 clubes y 2.256 jugadores iniciales en un universo ficticio inspirado en el fútbol europeo. Las plantillas y valoraciones son inventadas, no datos oficiales. SUPER SOCCER sigue en beta. Síguenos para descubrir los siguientes detalles.»  
+**Pantalla:** mapa abstracto se descompone en una constelación de escudos geométricos sin marcas.  
+**CTA:** Próximamente.
 
-## Revisión por pieza
-Gancho <=2 s; coherencia de personaje; voz/música/efectos limpios; subtítulos legibles; sin terceros; exactitud factual; CTA adecuado; no pedir jugar en clase; exportar 1080x1920, 30 fps, zona segura. Los .srt definitivos dependen de la voz generada; no se adjuntan archivos ficticios.
+## V08 — Una carrera que sigue (22 s)
+**Gancho:** «Un partido termina. La carrera sigue.»  
+**Voz:** «El proyecto incluye carrera multitemporada, mercado, cantera e historial. La idea es construir una trayectoria de entrenador temporada a temporada. Son funciones descritas en el repositorio; la beta todavía no es jugable. Guarda esta pista y sigue a UniFormer Studio para el siguiente avance.»  
+**Pantalla:** línea temporal de temporadas se transforma en ruta poligonal.  
+**CTA:** Síguenos.
+
+## V09 — Tu carrera, tres ranuras (24 s)
+**Gancho:** «Tres ranuras para guardar tu carrera.»  
+**Voz:** «El proyecto describe tres ranuras independientes para guardar carreras. Los datos se guardan en el navegador donde se crean, con opciones de exportación e importación. Ojo: borrar los datos del navegador puede eliminarlos. SUPER SOCCER está en beta. Síguenos para conocer cuándo habrá novedades.»  
+**Pantalla:** tres tarjetas de guardado se iluminan de una en una; cierre «Próximamente».  
+**CTA:** Síguenos.
+
+## V10 — Pieza insignia: La ventana se abre (71 s)
+**Gancho:** «Hay juegos que empiezan con una descarga.»  
+**Voz completa:** «Hay juegos que empiezan con una descarga. Nosotros queremos empezar con una ventana. UniFormer Studio está preparando juegos propios para el navegador: abres, descubres y entras en otro mundo, sin instalar nada. Pensamos en equipos modestos y en jugar con teclado y ratón; la compatibilidad depende de cada dispositivo y de lo que permita cada centro. Nuestro primer proyecto se llama SUPER SOCCER. Es una beta, todavía no jugable. En el proyecto preparas una plantilla y observas una retransmisión animada: pases, carreras, tiros, paradas y goles nacen de una simulación estadística. En el descanso puedes preparar el siguiente tramo. No manejas directamente a los futbolistas. Detrás hay clubes ficticios, temporadas, mercado, cantera y carreras que guardan su progreso. Estamos construyendo la web y puliendo el proyecto paso a paso. La fecha de lanzamiento aún no está confirmada. Esta ventana todavía no se ha abierto del todo. Síguenos y descubre UniFormer Studio. Próximamente.»  
+**Storyboard:** ventana en oscuridad → paisaje geométrico → campo y simulación ilustrada → paneles de gestión → ventana vuelve a cerrarse con la marca. Rotular «Arte promocional; beta en desarrollo».  
+**CTA:** Síguenos. **No programar antes del visto bueno del cliente.**
+
+## Cinco piezas estáticas para Instagram
+I01 «Una ventana. Un mundo.» — identidad UniFormer Studio.  
+I02 «SUPER SOCCER está en beta» — arte conceptual de campo, sin aparentar captura.  
+I03 «El descanso también cuenta» — pizarra y cinco posiciones.  
+I04 «188 clubes; universo ficticio» — dato atribuido al README.  
+I05 «Tres ranuras independientes» — guardados con aviso de datos locales.
+
+## Revisión técnica pendiente
+Los SRT agrupan dos palabras y su tiempo es proporcional a la longitud del texto, no a una transcripción alineada. Reemplazar la voz por español natural, alinear palabra por palabra y volver a renderizar antes de programar.
