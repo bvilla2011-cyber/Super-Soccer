@@ -105,17 +105,48 @@ async function startCareer(force=false){
   }finally{busy=false;}
 }
 
-function matchHTML(w,f,friendly){
-  const h=teamById(w,f.home),a=teamById(w,f.away),comp=w.competitions.find(c=>c.id===f.competition);
-  return `<div class="match-app"><header class="match-topbar">${UI.logo()}<div><span class="eyebrow">${e(comp?.name??'AMISTOSO DE EXHIBICIÓN')}</span><small>SIMULACIÓN ANIMADA · ${UI.seasonLabel(w)}</small></div><div class="match-top-actions">${UI.button('Pausar','pause','btn compact secondary','id="pause-button"')}${UI.button('⛶ Pantalla completa','fullscreen','btn compact secondary')}${UI.button(friendly?'Salir':'Guardar y salir','exit-match','btn compact')}</div></header><div class="match-scoreboard"><div class="score-team">${badgeSVG(h,43)}<span>${e(h.name)}<small id="home-tactic">${h.formation}</small></span></div><div class="score-center"><div><b id="home-score">0</b><span>–</span><b id="away-score">0</b></div><span id="match-clock">00:00</span></div><div class="score-team away"><span>${e(a.name)}<small id="away-tactic">${a.formation}</small></span>${badgeSVG(a,43)}</div></div><div class="match-layout"><section class="broadcast"><div class="broadcast-label"><span class="live-dot"></span> SEÑAL DEL ESTADIO <span id="match-state">SAQUE DE CENTRO</span></div><div class="canvas-wrap"><canvas id="match-canvas" aria-label="Retransmisión automática del partido de fútbol"></canvas><div class="match-overlay" id="match-overlay"></div></div><div class="broadcast-controls"><div class="speed-control"><span>VELOCIDAD</span>${[1,2,4,8].map(v=>UI.button(`${v}×`,`speed-${v}`,`speed-btn ${v===1?'active':''}`)).join('')}</div><span class="broadcast-hint">TÚ DIRIGES. EL FÚTBOL SUCEDE.</span>${UI.button('Guía de retransmisión','match-help','text-btn')}</div></section><aside class="match-sidebar"><div class="match-analysis"><div class="eyebrow">LA LECTURA DEL PARTIDO</div><h2>Desde el banquillo</h2><p id="live-comment">Los equipos saltan al césped. Todo está listo.</p><div class="live-stat"><b id="home-shots">0</b><span>TIROS</span><b id="away-shots">0</b></div><div class="live-stat"><b id="home-possession">50%</b><span>POSESIÓN</span><b id="away-possession">50%</b></div><div class="possession-bar"><i id="possession-bar" style="width:50%"></i></div><div id="penalty-live"></div></div><div class="match-feed"><div class="eyebrow">EL PARTIDO, MINUTO A MINUTO</div><div id="live-feed"><p class="muted">La historia está por escribirse.</p></div></div><div class="match-coaching"><span>45' / LA PIZARRA</span><p>Podrás ajustar la formación y cambiar titulares en el descanso. Tus decisiones influyen en la segunda parte.</p></div></aside></div><footer class="match-footer"><span><kbd>Espacio</kbd> Pausa <kbd>1–4</kbd> Velocidad <kbd>F</kbd> Pantalla completa</span><span>${friendly?'AMISTOSO · NO MODIFICA TU CARRERA':'AUTOGUARDADO DURANTE EL PARTIDO'}</span></footer></div>`;
+const ALT_KIT_COLORS=['#3bd3e8','#ed4bbc','#f1cd32','#36ce78','#ef5947','#4665ed','#f4f1e7','#242b38'];
+function hexToRgb(color){
+  const match=/^#([0-9a-f]{6})$/i.exec(String(color??''));
+  return match?[parseInt(match[1].slice(0,2),16),parseInt(match[1].slice(2,4),16),parseInt(match[1].slice(4,6),16)]:[128,128,128];
+}
+function hueOf([r,g,b]){
+  r/=255;g/=255;b/=255;const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
+  if(!delta)return 0;
+  let hue=max===r?((g-b)/delta)%6:max===g?(b-r)/delta+2:(r-g)/delta+4;
+  return (hue*60+360)%360;
+}
+function kitColorsClash(first,second){
+  const a=hexToRgb(first),b=hexToRgb(second);
+  const distance=Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+  const hueGap=Math.abs(hueOf(a)-hueOf(b)),hueDistance=Math.min(hueGap,360-hueGap);
+  const saturation=rgb=>Math.max(...rgb)-Math.min(...rgb);
+  const lightness=rgb=>(Math.max(...rgb)+Math.min(...rgb))/510;
+  return distance<190||(hueDistance<34&&saturation(a)>55&&saturation(b)>55&&Math.abs(lightness(a)-lightness(b))<.43);
+}
+function contrastingMatchKits(home,away){
+  const homeColor=home.colors?.[0]??'#ece9de',awayPrimary=away.colors?.[0]??'#3158be';
+  let awayColor=awayPrimary;
+  if(kitColorsClash(homeColor,awayPrimary)){
+    const options=[away.colors?.[1],...ALT_KIT_COLORS].filter(Boolean).filter(color=>!kitColorsClash(homeColor,color));
+    awayColor=options.sort((a,b)=>Math.hypot(...hexToRgb(b).map((v,i)=>v-hexToRgb(homeColor)[i]))-Math.hypot(...hexToRgb(a).map((v,i)=>v-hexToRgb(homeColor)[i])))[0]??'#f4f1e7';
+  }
+  const luminance=rgb=>.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
+  const awayTrim=luminance(hexToRgb(awayColor))>150?'#17202b':'#f4f1e7';
+  return {home:{...home,colors:[homeColor,home.colors?.[1]??'#f3f0df']},away:{...away,colors:[awayColor,awayTrim]}};
+}
+function matchHTML(w,f,friendly,kits){
+  const h=kits.home,a=kits.away,comp=w.competitions.find(c=>c.id===f.competition);
+  return `<div class="match-app"><header class="match-topbar">${UI.logo()}<div><span class="eyebrow">${e(comp?.name??'AMISTOSO DE EXHIBICIÓN')}</span><small>SIMULACIÓN ANIMADA · ${UI.seasonLabel(w)}</small></div><div class="match-top-actions">${UI.button('Pausar','pause','btn compact secondary','id="pause-button"')}${UI.button('⛶ Pantalla completa','fullscreen','btn compact secondary')}${UI.button(friendly?'Salir':'Guardar y salir','exit-match','btn compact')}</div></header><div class="match-scoreboard"><div class="score-team">${badgeSVG(h,43)}<span>${e(h.name)}<small id="home-tactic">${h.formation}</small></span><i class="score-kit-dot" style="--kit-color:${e(h.colors[0])}" aria-label="Equipación local"></i></div><div class="score-center"><div><b id="home-score">0</b><span>–</span><b id="away-score">0</b></div><span id="match-clock">00:00</span></div><div class="score-team away"><i class="score-kit-dot" style="--kit-color:${e(a.colors[0])}" aria-label="Equipación visitante"></i><span>${e(a.name)}<small id="away-tactic">${a.formation}</small></span>${badgeSVG(a,43)}</div></div><div class="match-layout"><section class="broadcast"><div class="broadcast-label"><span class="live-dot"></span> SEÑAL DEL ESTADIO <span id="match-state">SAQUE DE CENTRO</span></div><div class="canvas-wrap"><canvas id="match-canvas" aria-label="Retransmisión automática del partido de fútbol"></canvas><div class="match-overlay" id="match-overlay"></div></div><div class="broadcast-controls"><div class="speed-control"><span>VELOCIDAD</span>${[1,2,4,8].map(v=>UI.button(`${v}×`,`speed-${v}`,`speed-btn ${v===1?'active':''}`)).join('')}</div><span class="broadcast-hint">TÚ DIRIGES. EL FÚTBOL SUCEDE.</span>${UI.button('Guía de retransmisión','match-help','text-btn')}</div></section><aside class="match-sidebar"><div class="match-analysis"><div class="eyebrow">LA LECTURA DEL PARTIDO</div><h2>Desde el banquillo</h2><p id="live-comment">Los equipos saltan al césped. Todo está listo.</p><div class="live-stat"><b id="home-shots">0</b><span>TIROS</span><b id="away-shots">0</b></div><div class="live-stat"><b id="home-possession">50%</b><span>POSESIÓN</span><b id="away-possession">50%</b></div><div class="possession-bar"><i id="possession-bar" style="width:50%"></i></div><div id="penalty-live"></div></div><div class="match-feed"><div class="eyebrow">EL PARTIDO, MINUTO A MINUTO</div><div id="live-feed"><p class="muted">La historia está por escribirse.</p></div></div><div class="match-coaching"><span>45' / LA PIZARRA</span><p>Podrás ajustar la formación y cambiar titulares en el descanso. Tus decisiones influyen en la segunda parte.</p></div></aside></div><footer class="match-footer"><span><kbd>Espacio</kbd> Pausa <kbd>1–4</kbd> Velocidad <kbd>F</kbd> Pantalla completa</span><span>${friendly?'AMISTOSO · NO MODIFICA TU CARRERA':'AUTOGUARDADO DURANTE EL PARTIDO'}</span></footer></div>`;
 }
 function beginMatch(w,f,friendly=false){
   if(game||busy)return;closeModal(true);clearTimeout(saveTimer);
   const snapshot=!friendly&&pendingMatch?.fixtureId===f.id?pendingMatch.snapshot:null;
-  view='match';matchContext={world:w,fixture:f,friendly,previous:world?'home':'landing'};root.innerHTML=matchHTML(w,f,friendly);
-  game=new MatchSimulation({home:teamById(w,f.home),away:teamById(w,f.away),fixtureId:f.id,userSide:f.home===w.userTeam?0:1,knockout:f.stage==='knockout',difficulty:w.difficulty,duration:settings.duration,seed:matchSeed(w,f.id),snapshot,onEvent:ev=>{
+  view='match';matchContext={world:w,fixture:f,friendly,previous:world?'home':'landing'};const kits=contrastingMatchKits(teamById(w,f.home),teamById(w,f.away));root.innerHTML=matchHTML(w,f,friendly,kits);
+  game=new MatchSimulation({home:kits.home,away:kits.away,fixtureId:f.id,userSide:f.home===w.userTeam?0:1,knockout:f.stage==='knockout',difficulty:w.difficulty,duration:settings.duration,seed:matchSeed(w,f.id),snapshot,onEvent:ev=>{
     audio.play(ev.type);if(ev.type==='goal')renderer?.goalParticles(ev.side);if(ev.type==='halftime')openHalfTime();
   },onEnd:result=>finishMatch(result)});
+  game.teams=[kits.home,kits.away];
   renderer=new Renderer(document.getElementById('match-canvas'),settings);lastCheckpoint=performance.now();audio.unlock().then(()=>audio.startCrowd());
   let last=performance.now(),lastHUD=0;
   const frame=now=>{
