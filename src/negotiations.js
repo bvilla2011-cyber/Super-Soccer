@@ -67,7 +67,7 @@ function generateIncomingOffer(world) {
   const rng=random(world.rngState);if(rng()>.5){world.rngState=rng.state();return null;}
   const own=teamById(world,world.userTeam),reserved=new Set(active.map(o=>o.playerId));
   const players=own.roster.filter(p=>!p.loan&&!reserved.has(p.id)&&own.roster.length>9&&(p.position!=='POR'||own.roster.filter(q=>q.position==='POR').length>1));
-  const buyers=world.teams.filter(t=>t.id!==own.id&&t.roster.length<20);
+  const buyers=world.teams.filter(t=>t.id!==own.id&&t.roster.length<26);
   const options=[];
   for(const player of players)for(const buyer of buyers){
     const asking=transferPrice(player,own,buyer),fee=Math.round(asking*(.88+rng()*.18)/10_000)*10_000;
