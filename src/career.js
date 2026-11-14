@@ -388,7 +388,42 @@ export function sellPlayer(world,playerId,discount=.1) {
   addFinance(world,`Venta: ${p.name}`,fee);news(world,`${p.name} ficha por ${buyer.name}`,'La operación se ha completado.','transfer');return fee;
 }
 
-export function quickSellPlayer(world,playerId) {return sellPlayer(world,playerId,.25);}
+export function quickSellPlayer(world,playerId) {
+  if(!transferOpen(world))throw new Error('El mercado está cerrado.');
+  const own=teamById(world,world.userTeam),player=own.roster.find(item=>item.id===playerId);
+  if(!player)throw new Error('Jugador desconocido.');
+  if(player.loan)throw new Error('Un jugador cedido no se puede vender.');
+  if(own.roster.length<=8)throw new Error('Necesitas al menos ocho jugadores.');
+  if(player.position==='POR'&&own.roster.filter(item=>item.position==='POR').length<=1)throw new Error('Necesitas conservar un portero.');
+  const quota=world.quickSales?.season===world.season?Math.max(0,Math.floor(world.quickSales.count??0)):0;
+  if(quota>=5)throw new Error('Ya has utilizado las cinco ventas rápidas de esta temporada.');
+  const fee=Math.round(playerValue(player,own)*.75/10_000)*10_000;
+  const clubs=world.teams.filter(team=>team.id!==own.id);
+  const byFit=(a,b)=>Math.abs(teamRating(a)-overall(player))-Math.abs(teamRating(b)-overall(player))||a.name.localeCompare(b.name);
+  let buyer=clubs.filter(team=>team.roster.length<26).sort(byFit)[0];
+  if(!buyer) {
+    const options=clubs.map(team=>{
+      const reserve=team.roster.filter(item=>!team.lineup.includes(item.id)&&!item.loan&&(item.position!=='POR'||team.roster.filter(p=>p.position==='POR').length>1)).sort((a,b)=>overall(a)-overall(b))[0];
+      return reserve?{team,reserve}:null;
+    }).filter(Boolean).sort((a,b)=>byFit(a.team,b.team));
+    const option=options[0];
+    if(option) {
+      buyer=option.team;
+      buyer.roster=buyer.roster.filter(item=>item.id!==option.reserve.id);
+      option.reserve.contract=0;
+      world.freeAgents??=[];
+      world.freeAgents.push(option.reserve);
+      world.freeAgents=world.freeAgents.slice(-200);
+    }
+  }
+  if(!buyer)throw new Error('No hay espacio en las plantillas para completar esta venta.');
+  // Las cinco operaciones tienen un comprador garantizado; la bolsa rápida cubre el
+  // presupuesto que falte para que el traspaso no dependa de los fondos de la IA.
+  buyer.budget=Math.max(buyer.budget,fee);
+  const paid=sellPlayer(world,playerId,.25);
+  world.quickSales={season:world.season,count:quota+1};
+  return paid;
+}
 export function renewPlayer(world,id) {
   const t=teamById(world,world.userTeam),p=t.roster.find(p=>p.id===id);if(!p)throw new Error('Jugador desconocido.');
   const fee=wage(p)*12;if(t.budget<fee)throw new Error('No hay presupuesto para la prima.');
