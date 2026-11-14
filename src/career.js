@@ -19,7 +19,7 @@ export function createCareer({teamId='es-2',manager='Míster',difficulty='club',
   return world;
 }
 export function rebaseCareerEconomy(world) {
-  if(!world)return false;
+  if(!world||!Array.isArray(world.teams))return false;
   let changed=false;
   const previousVersion=world.economyVersion??0;
   if(previousVersion<ECONOMY_VERSION) {
