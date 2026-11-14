@@ -137,6 +137,18 @@ export function activePlayers(team) {
     const replacement=candidates[0];
     if(replacement){slots[index]={player:replacement,slotIndex:index};used.add(replacement.id);}
   }
+  const selected=slots.filter(Boolean);
+  if(!selected.some(({player})=>player.position==='POR')) {
+    const reserveKeeper=available.filter(player=>player.position==='POR'&&!used.has(player.id)).sort((a,b)=>overall(b)-overall(a))[0];
+    const fieldSlot=slots.map((entry,index)=>entry&&entry.player.position!=='POR'?{entry,index}:null).filter(Boolean).sort((a,b)=>overall(a.entry.player)-overall(b.entry.player))[0];
+    if(reserveKeeper&&fieldSlot) {
+      used.delete(fieldSlot.entry.player.id);
+      slots[fieldSlot.index]={player:reserveKeeper,slotIndex:fieldSlot.index};
+      used.add(reserveKeeper.id);
+    } else if(fieldSlot) {
+      slots[fieldSlot.index]={...fieldSlot.entry,player:{...fieldSlot.entry.player,emergencyKeeper:true}};
+    }
+  }
   return slots.filter(Boolean).map(({player,slotIndex})=>({...player,slotIndex}));
 }
 export function teamRating(team) {
