@@ -1,32 +1,20 @@
-# Métricas, compatibilidad y datos anónimos
+# Medición, música y límites de los canales
 
-## Conectividad
-Metricool muestra Instagram y TikTok conectados para la marca uniformerstudio. YouTube no está conectado en la marca visible. No se han creado posts: faltan archivos de vídeo finales y fechas; la herramienta de programación requiere media y campos por plataforma. No se ha activado informe semanal recurrente.
+## Metricool
+Marca visible: `uniformerstudio`; Instagram y TikTok conectados. YouTube Shorts no aparece conectado. Se encontró una publicación de aula programada el 14-11-2026 a las 19:00 en Instagram y TikTok; no se modifica y queda fuera del periodo 16–29. El conector de Metricool devuelve las publicaciones programadas, pero no el historial publicado.
 
-## Appwrite: propuesta de esquema aislado
-No hay proyecto UniFormer de campaña en el contexto Appwrite, y el operador disponible no expone creación de proyecto (solo acceso a proyectos existentes). No se ha tocado STARSHIP-SABOTAGE ni PADELUM. Crear un proyecto nuevo desde consola cuando esté habilitado, nombrado `uniformer-season0-analytics`, región UE (Frankfurt si está disponible), separado de cualquier juego.
+Las métricas disponibles deben incluir visualizaciones/reproducciones, tiempo visto o retención, seguidores, comentarios, compartidos y clics en enlaces. Los clics solo se interpretan tras publicar un enlace oficial con UTM. Revisar el día 7 (22-11) y ajustar las piezas siguientes con datos reales.
 
-No guardar datos personales, IP, user-agent completo, IDs de usuario, correos, nombres de centros o edades. Evitar cookies y fingerprinting. Usar eventos agregados con periodo de retención corto.
-- `campaign_events`: `event_type` enum (landing_view, play_click, poll_vote, campaign_event, load_error), `campaign` string, `asset_id` string opcional, `choice` enum opcional, `browser_family` enum grueso opcional, `device_class` enum (desktop/tablet/mobile/unknown), `created_at` timestamp. Sin identificador persistente.
-- `daily_aggregates`: fecha, evento, campaña, recuento entero; acceso solo backend.
-- Voto: opción predefinida y evento agregado. No recoger texto libre.
-- Permisos: lectura agregada solo administradores; escritura mediante Function validada con allowlist de eventos y límites de frecuencia, sin crear perfil de visitante. Desactivar acceso público directo de escritura a tablas.
-- Minimizar campos: si no hacen falta para la pregunta de negocio, no recogerlos. Retención sugerida 90 días y después eliminar/agregar.
-- No crear colección/tablas ni función porque no existe proyecto aislado ni asistente de creación disponible.
+Metricool sugiere para Instagram y TikTok laborables fuertes alrededor de las 18:00, con buenos valores de Instagram los domingos por la mañana y TikTok los domingos a media mañana. El calendario prueba 17:30, 18:45, 17:45 y 18:30 en los primeros cuatro días; el resto oscila entre 17:30 y 19:00. No hay datos de campaña anterior suficientes para declarar un ganador.
 
-### Integración web propuesta
-Al publicar página Próximamente, el frontend debe invocar una Function de Appwrite con payload mínimo: `{event_type, campaign, asset_id?, choice?}`. Appwrite Function valida valores, agrega/guarda solo evento, nunca devuelve datos de visitantes. No mandar eventos en el juego sin consentimiento y análisis de política del centro. No instalar SDK/llaves secretas de servidor en frontend. Configuración pública solo endpoint y project ID; API key solo secret de Function.
+## Enlaces y atribución
+Fecha y URL de lanzamiento sin confirmar. No se inventa dominio ni se añade UTM. Al confirmar la URL, patrón: `utm_source=instagram|tiktok|youtube&utm_medium=organic_social&utm_campaign=ventana_navegador&utm_content={asset_id}`. No usar «Juega ahora» hasta que el juego y la web estén publicados.
 
-## Prueba de compatibilidad en instituto (plantilla)
-| Centro/código anónimo | Equipo/clase aproximada | Navegador/versión mayor | Resolución | Tiempo de carga | Controles | Filtro de red | Observaciones |
-|---|---|---|---|---|---|---|---|
-| | | | | | teclado/ratón | permitido/bloqueado/desconocido | |
+## Audio y licencias
+- Voz: FFmpeg flite, voz `slt`, sintetizada localmente. Modelo anglófono; pronunciación española pendiente de validación y sustitución por voz española natural.
+- Música: tonos sinusoidales sintetizados con FFmpeg, mezclados a bajo volumen bajo la voz. Sin canciones, samples o pistas de terceros; creación propia para esta campaña.
+- Efectos: acentos geométricos y partículas generados por código; no se usan bibliotecas externas.
+- Licencia/fuente: material creado para UniFormer Studio en esta campaña; sin licencia de terceros.
 
-No rellenar centro, alumno ni identificadores personales. Hacer prueba solo con autorización del centro, en recreo o con profesor.
-
-### Guía de 5 pasos (5 minutos)
-1. Abre la URL oficial en un ordenador autorizado; anota solo código aleatorio de prueba, no el nombre del centro.
-2. Anota navegador y versión principal, resolución y si la página abre.
-3. Cronometra desde cargar hasta menú listo; registra error visible si lo hay.
-4. Comprueba teclado/ratón con instrucciones de pantalla, sin guardar nombres de jugadores.
-5. Anota si filtro de red bloquea el sitio y borra cualquier historial/archivo local si el equipo lo requiere. No fuerces filtros ni políticas.
+## Appwrite y menores
+Appwrite no hace falta para pre-lanzamiento y no se ha tocado ningún proyecto. Si más adelante existe una landing y una pregunta de negocio concreta, crear un proyecto aislado y limitar la medición a recuentos agregados anónimos; sin cuentas, datos personales, direcciones IP persistentes, texto libre ni identificadores de estudiantes.
