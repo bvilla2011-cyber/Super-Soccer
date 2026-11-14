@@ -84,7 +84,15 @@ function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{save()
 async function load(id,backup=false){
   if(busy)return;
   const payload=await loadSlot(id,{backup});if(!payload){toast('Esta ranura está vacía.');return;}
-  stopMatch();world=payload.world;pendingMatch=payload.match;slot=id;view='home';competition=null;calendarEvent=null;status(payload.recovered?'Copia anterior recuperada':'✓ Guardado en este PC');closeModal(true);if(payload.economyMigrated)await save();render();if(payload.recovered)toast('Se ha recuperado la copia anterior de la carrera.');if(payload.economyMigrated)toast('Plantillas y presupuestos actualizados para esta temporada.');if(pendingMatch)toast('Hay una simulación en curso. Pulsa Reanudar simulación para continuar.');if(world.pendingPressConference)openPressConference();
+  stopMatch();world=payload.world;pendingMatch=payload.match;slot=id;view='home';competition=null;calendarEvent=null;
+  status(payload.recovered?'Copia anterior recuperada':'✓ Guardado en este PC');closeModal(true);render();
+  if(payload.recovered)toast('Se ha recuperado la copia anterior de la carrera.');
+  if(payload.economyMigrated) {
+    try {await save();toast('Plantillas y presupuestos actualizados para esta temporada.');}
+    catch(error) {toast('Partida cargada. No se pudo actualizar automáticamente el guardado: '+error.message,true);}
+  }
+  if(pendingMatch)toast('Hay una simulación en curso. Pulsa Reanudar simulación para continuar.');
+  if(world.pendingPressConference)openPressConference();
 }
 function findPlayer(id,w=world){const team=w?.teams.find(t=>t.roster.some(p=>p.id===id)||(t.academyPlayers??[]).some(p=>p.id===id));return {p:team?.roster.find(p=>p.id===id)??team?.academyPlayers?.find(p=>p.id===id)??w?.freeAgents.find(p=>p.id===id),team};}
 function showPlayer(id){const w=matchContext?.friendly?matchContext.world:world;const {p,team}=findPlayer(id,w);if(p){let html=UI.playerCard(w,p,team);if(game)html=html.replace(/<div class="modal-actions">[\s\S]*?<\/div><\/div>$/,'</div>');modal('INFORME DEL JUGADOR',html,{wide:true});}}
