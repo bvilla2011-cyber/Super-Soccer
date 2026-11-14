@@ -140,10 +140,10 @@ export function activePlayers(team) {
   return slots.filter(Boolean).map(({player,slotIndex})=>({...player,slotIndex}));
 }
 export function teamRating(team) {
-  const ps = activePlayers(team);
-  const squadRating=ps.length?ps.reduce((s,p)=>s+overall(p)*(.72+.28*p.fitness/100)*(.92+.08*(p.morale??65)/100),0)/Math.max(1,ps.length):25;
-  const teamMood=1+((team.happiness??65)-65)*.0018;
-  return Math.round(squadRating*teamMood);
+  // La media del club refleja la valoración real de sus once titulares.
+  // Forma física, moral y felicidad afectan al partido, no a la media mostrada.
+  const ps=activePlayers(team);
+  return ps.length?Math.round(ps.reduce((sum,p)=>sum+overall(p),0)/ps.length):25;
 }
 export function badgeSVG(team, size = 48) {
   const key = parseInt(hash(team.id),16)%3;
