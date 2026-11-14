@@ -2,6 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {createCareer,buyPlayer,sellPlayer,renewPlayer,promoteYouth,upgrade,advance,nextSeason,transferPrice} from '../src/career.js';
 import {teamById,overall,wage} from '../src/data.js';
 import {exportSave,importSave,makeEnvelope,unpack,validatePayload,saveSlot,loadSlot,listSlots} from '../src/storage.js';
+import {hash} from '../src/utils.js';
 
 test('transfer funds balance, ownership moves and repeated purchases fail',()=>{
  const w=createCareer({seed:42}),own=teamById(w,w.userTeam),source=teamById(w,'en-1'),p=source.roster[8],fee=transferPrice(p,source,own),budget=own.budget,other=source.budget;
@@ -35,6 +36,15 @@ test('a mid-season transfer preserves season and career statistics',()=>{
  const w=createCareer({seed:42});advance(w);const source=teamById(w,'en-1'),own=teamById(w,w.userTeam),p=source.roster[4];const season=structuredClone(p.stats),career=structuredClone(p.career);own.budget=1_000_000_000;buyPlayer(w,p.id);assert.deepEqual(p.stats,season);assert.deepEqual(p.career,career);
 });
 
+test('loads a save from an older roster and feature schema by migrating before validation',async()=>{
+ const memory=new Map();globalThis.localStorage={getItem:k=>memory.get(k)??null,setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)};
+ const world=createCareer({seed:123,manager:'Guardado antiguo'});world.rosterVersion=2;world.featuresVersion=1;
+ for(const team of world.teams){team.roster=team.roster.slice(0,18);team.lineup=team.lineup.filter(id=>team.roster.some(player=>player.id===id));delete team.happiness;delete team.academyPlayers;}
+ const envelope=makeEnvelope(createCareer({seed:124}));const payload={world,match:null};envelope.data=JSON.stringify(payload);envelope.checksum=hash(envelope.data);
+ memory.set('super-soccer-save-1',JSON.stringify({id:1,current:envelope,backup:null,metadata:{manager:world.manager}}));
+ const loaded=await loadSlot(1);assert.equal(loaded.world.manager,'Guardado antiguo');assert.equal(loaded.world.rosterVersion,3);
+ assert.ok(loaded.world.teams.every(team=>team.roster.length===26&&team.academyPlayers.length===0&&team.happiness===65));
+});
 test('fallback storage keeps the newest career when the previous generation exceeds quota',async()=>{
  const memory=new Map();globalThis.localStorage={getItem:k=>memory.get(k)??null,removeItem:k=>memory.delete(k),setItem:(k,v)=>{if(JSON.parse(v).backup)throw new Error('quota');memory.set(k,v);}};
  const w=createCareer({seed:91,manager:'Antes'});await saveSlot(1,w);w.manager='Después';const meta=await saveSlot(1,w);assert.equal(meta.backend,'localStorage-single');assert.equal((await loadSlot(1)).world.manager,'Después');assert.equal((await listSlots())[0].hasBackup,false);
