@@ -96,7 +96,7 @@ export function validatePayload(payload) {
   assert(Array.isArray(w.scoutingReports??[])&&(w.scoutingReports??[]).length<=30,'informes de ojeo.');
   for(const report of w.scoutingReports??[]){assert(typeof report.id==='string'&&typeof report.country==='string'&&['available','signed','declined'].includes(report.status)&&finite(report.fee,0,1e10)&&typeof report.unread==='boolean','informe de ojeo.');if(report.prospect)validatePlayer(report.prospect,players);}
   assert(Array.isArray(w.events)&&w.events.length>0&&w.events.length<=150&&integer(w.eventIndex,0,w.events.length),'calendario.');
-  assert(w.events.every(e=>typeof e.id==='string'&&typeof e.label==='string'&&['league','cup','europe','super'].includes(e.kind)&&integer(e.round,0,100)),'eventos.');
+  assert(w.events.every(e=>typeof e.id==='string'&&typeof e.label==='string'&&['league','cup','europe','super','gala'].includes(e.kind)&&integer(e.round,0,100)),'eventos.');
   assert(Array.isArray(w.competitions)&&w.competitions.length<=100,'competiciones.');
   const comps=new Set(w.competitions.map(c=>c.id));assert(comps.size===w.competitions.length,'competiciones repetidas.');
   for(const c of w.competitions) {
