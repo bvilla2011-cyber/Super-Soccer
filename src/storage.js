@@ -142,7 +142,9 @@ export function makeEnvelope(world,match=null) {
 export function unpack(envelope) {
   assert(envelope?.format===MAGIC&&envelope.version===SAVE_VERSION&&typeof envelope.data==='string','formato de archivo.');
   assert(envelope.data.length<=MAX_FILE&&hash(envelope.data)===envelope.checksum,'la suma de comprobación no coincide.');
-  return validatePayload(JSON.parse(envelope.data));
+  const payload=JSON.parse(envelope.data);
+  if(payload?.world)rebaseCareerEconomy(payload.world);
+  return validatePayload(payload);
 }
 let saveQueue=Promise.resolve();
 export function saveSlot(id,world,match=null) {
