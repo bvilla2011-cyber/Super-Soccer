@@ -1,0 +1,90 @@
+[Script Info]
+Title: UniFormer Studio campaign captions
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,DejaVu Sans,46,&H00FFFFFF,&H000000FF,&H00101418,&HCC101820,-1,0,0,0,100,100,0,0,3,2,0,8,60,60,260,1
+Style: Keyword,DejaVu Sans,46,&H0096E7A1,&H000000FF,&H00101418,&HCC101820,-1,0,0,0,100,100,0,0,3,2,0,8,60,60,260,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:00.74,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}Hay{\rDefault} juegos
+Dialogue: 0,0:00:00.74,0:00:01.65,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}que{\rDefault} empiezan
+Dialogue: 0,0:00:01.65,0:00:02.15,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}con{\rDefault} una
+Dialogue: 0,0:00:02.15,0:00:03.56,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}descarga{\rDefault} Nosotros
+Dialogue: 0,0:00:03.56,0:00:04.80,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}queremos{\rDefault} empezar
+Dialogue: 0,0:00:04.80,0:00:05.29,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}con{\rDefault} una
+Dialogue: 0,0:00:05.29,0:00:06.70,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}ventana{\rDefault} UniFormer
+Dialogue: 0,0:00:06.70,0:00:07.53,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}Studio{\rDefault} está
+Dialogue: 0,0:00:07.53,0:00:08.85,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}preparando{\rDefault} juegos
+Dialogue: 0,0:00:08.85,0:00:09.76,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}propios{\rDefault} para
+Dialogue: 0,0:00:09.76,0:00:10.75,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}el{\rDefault} navegador:
+Dialogue: 0,0:00:10.75,0:00:11.99,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}abres{\rDefault} descubres
+Dialogue: 0,0:00:11.99,0:00:12.57,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}y{\rDefault} entras
+Dialogue: 0,0:00:12.57,0:00:13.07,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}en{\rDefault} otro
+Dialogue: 0,0:00:13.07,0:00:13.81,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}mundo{\rDefault} sin
+Dialogue: 0,0:00:13.81,0:00:14.89,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}instalar{\rDefault} nada.
+Dialogue: 0,0:00:14.89,0:00:15.71,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}Pensamos{\rDefault} en
+Dialogue: 0,0:00:15.71,0:00:16.95,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}equipos{\rDefault} modestos
+Dialogue: 0,0:00:16.95,0:00:17.20,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}y{\rDefault} en
+Dialogue: 0,0:00:17.20,0:00:17.86,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}jugar{\rDefault} con
+Dialogue: 0,0:00:17.86,0:00:18.53,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}teclado{\rDefault} y
+Dialogue: 0,0:00:18.53,0:00:19.19,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}ratón{\rDefault} la
+Dialogue: 0,0:00:19.19,0:00:20.92,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}compatibilidad{\rDefault} depende
+Dialogue: 0,0:00:20.92,0:00:21.42,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}de{\rDefault} cada
+Dialogue: 0,0:00:21.42,0:00:22.41,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}dispositivo{\rDefault} y
+Dialogue: 0,0:00:22.41,0:00:22.74,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}de{\rDefault} lo
+Dialogue: 0,0:00:22.74,0:00:23.57,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}que{\rDefault} permita
+Dialogue: 0,0:00:23.57,0:00:24.48,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}cada{\rDefault} centro.
+Dialogue: 0,0:00:24.48,0:00:25.55,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}Nuestro{\rDefault} primer
+Dialogue: 0,0:00:25.55,0:00:26.38,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}proyecto{\rDefault} se
+Dialogue: 0,0:00:26.38,0:00:27.21,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}llama{\rDefault} SUPER
+Dialogue: 0,0:00:27.21,0:00:27.95,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}SOCCER{\rDefault} Es
+Dialogue: 0,0:00:27.95,0:00:28.61,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}una{\rDefault} beta,
+Dialogue: 0,0:00:28.61,0:00:29.36,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}todavía{\rDefault} no
+Dialogue: 0,0:00:29.36,0:00:30.19,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}jugable{\rDefault} En
+Dialogue: 0,0:00:30.19,0:00:31.01,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}el{\rDefault} proyecto
+Dialogue: 0,0:00:31.01,0:00:31.92,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}preparas{\rDefault} una
+Dialogue: 0,0:00:31.92,0:00:32.75,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}plantilla{\rDefault} y
+Dialogue: 0,0:00:32.75,0:00:33.66,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}observas{\rDefault} una
+Dialogue: 0,0:00:33.66,0:00:35.40,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}retransmisión{\rDefault} animada:
+Dialogue: 0,0:00:35.40,0:00:36.64,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}pases{\rDefault} carreras,
+Dialogue: 0,0:00:36.64,0:00:37.71,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}tiros{\rDefault} paradas
+Dialogue: 0,0:00:37.71,0:00:38.21,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}y{\rDefault} goles
+Dialogue: 0,0:00:38.21,0:00:38.79,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}nacen{\rDefault} de
+Dialogue: 0,0:00:38.79,0:00:39.86,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}una{\rDefault} simulación
+Dialogue: 0,0:00:39.86,0:00:41.02,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}estadística{\rDefault} En
+Dialogue: 0,0:00:41.02,0:00:41.85,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}el{\rDefault} descanso
+Dialogue: 0,0:00:41.85,0:00:43.00,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}puedes{\rDefault} preparar
+Dialogue: 0,0:00:43.00,0:00:43.91,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}el{\rDefault} siguiente
+Dialogue: 0,0:00:43.91,0:00:44.58,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}tramo{\rDefault} No
+Dialogue: 0,0:00:44.58,0:00:46.15,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}manejas{\rDefault} directamente
+Dialogue: 0,0:00:46.15,0:00:46.48,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}a{\rDefault} los
+Dialogue: 0,0:00:46.48,0:00:47.97,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}futbolistas{\rDefault} Detrás
+Dialogue: 0,0:00:47.97,0:00:48.71,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}hay{\rDefault} clubes
+Dialogue: 0,0:00:48.71,0:00:50.45,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}ficticios{\rDefault} temporadas,
+Dialogue: 0,0:00:50.45,0:00:51.69,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}mercado{\rDefault} cantera
+Dialogue: 0,0:00:51.69,0:00:52.43,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}y{\rDefault} carreras
+Dialogue: 0,0:00:52.43,0:00:53.26,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}que{\rDefault} guardan
+Dialogue: 0,0:00:53.26,0:00:54.17,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}su{\rDefault} progreso.
+Dialogue: 0,0:00:54.17,0:00:55.74,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}Estamos{\rDefault} construyendo
+Dialogue: 0,0:00:55.74,0:00:56.15,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}la{\rDefault} web
+Dialogue: 0,0:00:56.15,0:00:56.90,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}y{\rDefault} puliendo
+Dialogue: 0,0:00:56.90,0:00:57.73,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}el{\rDefault} proyecto
+Dialogue: 0,0:00:57.73,0:00:58.14,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}paso{\rDefault} a
+Dialogue: 0,0:00:58.14,0:00:58.72,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}paso{\rDefault} La
+Dialogue: 0,0:00:58.72,0:00:59.30,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}fecha{\rDefault} de
+Dialogue: 0,0:00:59.30,0:01:00.45,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}lanzamiento{\rDefault} aún
+Dialogue: 0,0:01:00.45,0:01:00.95,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}no{\rDefault} está
+Dialogue: 0,0:01:00.95,0:01:02.19,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}confirmada{\rDefault} Esta
+Dialogue: 0,0:01:02.19,0:01:03.35,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}ventana{\rDefault} todavía
+Dialogue: 0,0:01:03.35,0:01:03.68,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}no{\rDefault} se
+Dialogue: 0,0:01:03.68,0:01:04.42,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}ha{\rDefault} abierto
+Dialogue: 0,0:01:04.42,0:01:05.09,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}del{\rDefault} todo.
+Dialogue: 0,0:01:05.09,0:01:05.83,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}Síguenos{\rDefault} y
+Dialogue: 0,0:01:05.83,0:01:07.24,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}descubre{\rDefault} UniFormer
+Dialogue: 0,0:01:07.24,0:01:08.87,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}Studio{\rDefault} Próximamente.

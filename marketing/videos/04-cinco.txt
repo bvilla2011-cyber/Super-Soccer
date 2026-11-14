@@ -1,0 +1,1 @@
+En la retransmisión descrita por el proyecto aparecen cinco jugadores por equipo: portero y cuatro jugadores de campo. La cámara sigue la jugada mientras la simulación calcula el encuentro. Esto es un avance del proyecto, no una invitación a jugar ya: SUPER SOCCER sigue en beta.

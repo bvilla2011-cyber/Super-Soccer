@@ -1,0 +1,36 @@
+[Script Info]
+Title: UniFormer Studio campaign captions
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,DejaVu Sans,46,&H00FFFFFF,&H000000FF,&H00101418,&HCC101820,-1,0,0,0,100,100,0,0,3,2,0,8,60,60,260,1
+Style: Keyword,DejaVu Sans,46,&H0096E7A1,&H000000FF,&H00101418,&HCC101820,-1,0,0,0,100,100,0,0,3,2,0,8,60,60,260,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:01.10,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}El{\rDefault} repositorio
+Dialogue: 0,0:00:01.10,0:00:02.72,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}describe{\rDefault} velocidades
+Dialogue: 0,0:00:02.72,0:00:03.99,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}de{\rDefault} retransmisión
+Dialogue: 0,0:00:03.99,0:00:04.50,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}1×{\rDefault} 2×,
+Dialogue: 0,0:00:04.50,0:00:04.75,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}4×{\rDefault} y
+Dialogue: 0,0:00:04.75,0:00:05.52,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}8×{\rDefault} además
+Dialogue: 0,0:00:05.52,0:00:06.11,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}de{\rDefault} pausa
+Dialogue: 0,0:00:06.11,0:00:06.87,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}y{\rDefault} pantalla
+Dialogue: 0,0:00:06.87,0:00:07.89,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}completa{\rDefault} Son
+Dialogue: 0,0:00:07.89,0:00:08.91,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}controles{\rDefault} del
+Dialogue: 0,0:00:08.91,0:00:10.27,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}entrenador{\rDefault} dentro
+Dialogue: 0,0:00:10.27,0:00:11.29,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}del{\rDefault} proyecto;
+Dialogue: 0,0:00:11.29,0:00:11.80,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}la{\rDefault} beta
+Dialogue: 0,0:00:11.80,0:00:12.22,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}aún{\rDefault} no
+Dialogue: 0,0:00:12.22,0:00:13.41,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}está{\rDefault} disponible
+Dialogue: 0,0:00:13.41,0:00:14.26,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}para{\rDefault} jugar.
+Dialogue: 0,0:00:14.26,0:00:15.02,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}¿Qué{\rDefault} ritmo
+Dialogue: 0,0:00:15.02,0:00:16.12,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}elegirías{\rDefault} para
+Dialogue: 0,0:00:16.12,0:00:16.63,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}ver{\rDefault} una
+Dialogue: 0,0:00:16.63,0:00:17.82,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}final{\rDefault} Síguenos
+Dialogue: 0,0:00:17.82,0:00:18.42,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}y{\rDefault} pronto
+Dialogue: 0,0:00:18.42,0:00:19.16,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}habrá{\rDefault} más.

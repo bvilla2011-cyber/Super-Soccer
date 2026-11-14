@@ -1,0 +1,1 @@
+El proyecto describe tres ranuras independientes para guardar carreras. Los datos se guardan en el navegador donde se crean, con opciones de exportación e importación. Ojo: borrar los datos del navegador puede eliminarlos. SUPER SOCCER está en beta. Síguenos para conocer cuándo habrá novedades.

@@ -1,0 +1,1 @@
+El repositorio describe velocidades de retransmisión 1×, 2×, 4× y 8×, además de pausa y pantalla completa. Son controles del entrenador dentro del proyecto; la beta aún no está disponible para jugar. ¿Qué ritmo elegirías para ver una final? Síguenos y pronto habrá más.

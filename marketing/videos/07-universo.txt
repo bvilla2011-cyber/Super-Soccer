@@ -1,0 +1,1 @@
+El README del proyecto describe 188 clubes y 2.256 jugadores iniciales en un universo ficticio inspirado en el fútbol europeo. Las plantillas y valoraciones son inventadas, no datos oficiales. SUPER SOCCER sigue en beta. Síguenos para descubrir los siguientes detalles.

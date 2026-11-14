@@ -1,0 +1,37 @@
+[Script Info]
+Title: UniFormer Studio campaign captions
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,DejaVu Sans,46,&H00FFFFFF,&H000000FF,&H00101418,&HCC101820,-1,0,0,0,100,100,0,0,3,2,0,8,60,60,260,1
+Style: Keyword,DejaVu Sans,46,&H0096E7A1,&H000000FF,&H00101418,&HCC101820,-1,0,0,0,100,100,0,0,3,2,0,8,60,60,260,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:00.34,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}En{\rDefault} la
+Dialogue: 0,0:00:00.34,0:00:02.10,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}retransmisión{\rDefault} descrita
+Dialogue: 0,0:00:02.10,0:00:02.52,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}por{\rDefault} el
+Dialogue: 0,0:00:02.52,0:00:03.86,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}proyecto{\rDefault} aparecen
+Dialogue: 0,0:00:03.86,0:00:05.04,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}cinco{\rDefault} jugadores
+Dialogue: 0,0:00:05.04,0:00:05.88,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}por{\rDefault} equipo:
+Dialogue: 0,0:00:05.88,0:00:06.55,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}portero{\rDefault} y
+Dialogue: 0,0:00:06.55,0:00:07.81,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}cuatro{\rDefault} jugadores
+Dialogue: 0,0:00:07.81,0:00:08.48,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}de{\rDefault} campo.
+Dialogue: 0,0:00:08.48,0:00:09.15,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}La{\rDefault} cámara
+Dialogue: 0,0:00:09.15,0:00:09.74,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}sigue{\rDefault} la
+Dialogue: 0,0:00:09.74,0:00:10.91,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}jugada{\rDefault} mientras
+Dialogue: 0,0:00:10.91,0:00:11.92,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}la{\rDefault} simulación
+Dialogue: 0,0:00:11.92,0:00:12.67,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}calcula{\rDefault} el
+Dialogue: 0,0:00:12.67,0:00:13.85,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}encuentro{\rDefault} Esto
+Dialogue: 0,0:00:13.85,0:00:14.18,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}es{\rDefault} un
+Dialogue: 0,0:00:14.18,0:00:14.94,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}avance{\rDefault} del
+Dialogue: 0,0:00:14.94,0:00:15.86,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}proyecto{\rDefault} no
+Dialogue: 0,0:00:15.86,0:00:16.95,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}una{\rDefault} invitación
+Dialogue: 0,0:00:16.95,0:00:17.46,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}a{\rDefault} jugar
+Dialogue: 0,0:00:17.46,0:00:18.13,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}ya{\rDefault} SUPER
+Dialogue: 0,0:00:18.13,0:00:19.05,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}SOCCER{\rDefault} sigue
+Dialogue: 0,0:00:19.05,0:00:19.62,Default,,0,0,0,,{\an8\pos(540,540)}{\rKeyword}en{\rDefault} beta.
