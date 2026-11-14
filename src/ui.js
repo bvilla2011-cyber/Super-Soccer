@@ -166,13 +166,40 @@ export function setupView(teams,slots,config){
 
 
 
+function galaWinnerArt(player){
+  const skins=['#ffcd9a','#e7a76d','#b97545','#8b512f','#603726'],hairs=['#292130','#63412c','#d3a63e','#141c34','#9a4931','#b9c5ce'];
+  const skin=skins[(player.skin??0)%skins.length],hair=hairs[(player.hair??0)%hairs.length];
+  return `<svg class="gala-winner-art" viewBox="0 0 250 320" aria-hidden="true">
+    <circle cx="202" cy="43" r="28" fill="#f7d86d" stroke="#171837" stroke-width="6"/>
+    <path d="m190 30 12-8 12 8-3 13h-18zm-15 13 11-8 7 10-6 12-12-2zm39 0 11-2 6 11-10 9-12-6zM184 57l11-8 8 8-5 12-12-1zm25 0 10-5 7 10-8 10-11-3z" fill="#b8792e" stroke="#755122" stroke-width="2"/>
+    <path d="M157 188q19-30 25-68l4-33 12-8 10 7-3 17-3 35q-4 48-24 75" fill="#20264f" stroke="#171837" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M184 88q-5-10 1-18l7-6 7 10 3-12 7 1 1 14 7-8q8 3 2 12l-12 14-18 1z" fill="${skin}" stroke="#171837" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M50 315 61 241q6-44 46-54l16 19 19-19q39 9 47 54l11 74z" fill="#20264f" stroke="#171837" stroke-width="7" stroke-linejoin="round"/>
+    <path d="m103 186 20 20 19-20 12 10-17 27-14-7-15 7-17-27z" fill="#f4f1e7" stroke="#171837" stroke-width="5" stroke-linejoin="round"/>
+    <path d="m122 208 10 9-7 48-9 11-8-11-7-48 10-9z" fill="#d84c58" stroke="#171837" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M62 246 95 226l15 89H52zm101-20 24 20 10 69h-58z" fill="#f2c94c" stroke="#171837" stroke-width="5" opacity=".92"/>
+    <path d="M89 137v26q4 18 33 29 28-10 32-29v-26" fill="${skin}" stroke="#171837" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M79 91q0-37 43-39 43 2 43 39l-5 47q-5 27-38 39-33-12-38-39z" fill="${skin}" stroke="#171837" stroke-width="6"/>
+    <path d="M76 99 72 72l12-23 33-13 33 9 18 24-4 33-14-18-5-20-42 10-19-9-3 26z" fill="${hair}" stroke="#171837" stroke-width="6" stroke-linejoin="round"/>
+    <path d="m94 105 15-2m24 0 15 2" stroke="#322138" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="103" cy="114" rx="3" ry="4" fill="#171837"/><ellipse cx="139" cy="114" rx="3" ry="4" fill="#171837"/>
+    <path d="m121 113-4 16 8 1m-16 13q12 8 24 0" fill="none" stroke="#743d36" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M48 315h149" stroke="#f5d771" stroke-width="8" stroke-linecap="square"/>
+  </svg>`;
+}
 export function ballonGalaView(w) {
   const gala=w.ballonGala;
   if(!gala)return empty('La gala aún no se ha celebrado','Vuelve el 26 de octubre para conocer a los ganadores.');
   const player=gala.player,club=gala.club;
+  const winnerTeam=player?.id?w.teams.find(team=>team.roster.some(p=>p.id===player.id)):null;
+  const winner=winnerTeam?.roster.find(p=>p.id===player.id);
   return `<div class="ballon-gala">
     <div class="gala-intro"><span class="gala-date">${e(gala.date??'26 de octubre')} · TEMPORADA ${gala.season}</span><h2>UNA NOCHE PARA RECORDAR</h2><p>Las estrellas del fútbol se reúnen para celebrar una temporada inolvidable.</p></div>
-    <div class="gala-stage" aria-hidden="true"><div class="gala-spotlights"><i></i><i></i></div><div class="gala-curtain left"></div><div class="gala-curtain right"></div><div class="gala-stage-ring"></div><div class="gala-podium"><div class="gala-ball"><i></i></div><div class="gala-stand"></div><div class="gala-plinth"><span>★</span> SUPER SOCCER</div></div><span class="gala-stage-caption">GALA DEL BALÓN DE ORO</span></div>
+    <div class="gala-stage" role="img" aria-label="${e(player?.name??'El ganador')} recibe el Balón de Oro">
+      <div class="gala-spotlights"><i></i><i></i></div><div class="gala-curtain left"></div><div class="gala-curtain right"></div><div class="gala-stage-ring"></div>
+      <div class="gala-winner-scene"><div class="gala-winner-copy"><span>GANADOR · TEMPORADA ${gala.season}</span><strong>${e(player?.name??'Sin ganador')}</strong><small>${e(player?.club??'La temporada aún no tiene ganador')}</small>${winnerTeam?badgeSVG(winnerTeam,38):''}</div><div class="gala-winner-athlete">${winner?galaWinnerArt(winner):'<div class="gala-no-winner">★</div>'}</div></div>
+      <span class="gala-stage-caption">EL BALÓN DE ORO · SUPER SOCCER</span>
+    </div>
     <div class="gala-progress" aria-hidden="true"><i></i></div>
     <div class="gala-awards"><article class="gala-award ballon-award"><div class="gala-trophy">★</div><span>PRIMER PREMIO · MEJOR JUGADOR</span><h3>BALÓN DE ORO</h3><b>${e(player?.name??'Sin ganador')}</b><small>${e(player?.club??'')} · ${player?.goals??0} goles · ${player?.assists??0} asistencias · ${player?.titles??0} títulos</small></article><article class="gala-award club-award"><div class="gala-trophy">♜</div><span>SEGUNDO PREMIO · MEJOR CLUB</span><h3>CLUB DEL AÑO</h3><b>${e(club?.name??'Sin ganador')}</b><small>${club?.players??0} jugadores · ${club?.played??0} partidos · ${club?.wins??0} victorias · ${club?.titles??0} títulos</small></article></div>
     <p class="gala-method">El Balón de Oro valora goles, asistencias, partidos y títulos. El club del año combina nivel de la plantilla, victorias y trofeos.</p><div class="modal-actions">${button('CONTINUAR','close-modal','btn primary')}</div>
