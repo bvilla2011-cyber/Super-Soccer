@@ -48,6 +48,7 @@ function render(){
     if(view==='market')content=UI.market(world,filters);
     if(view==='competitions')content=UI.competitionView(world,competition,compTab);
     if(view==='calendar')content=UI.calendar(world,calendarAll,calendarEvent);
+    if(view==='news')content=UI.newsView(world);
     if(view==='club')content=UI.clubView(world);
     if(view==='honours')content=UI.honours(world);
   }

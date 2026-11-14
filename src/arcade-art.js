@@ -7,6 +7,7 @@ const paths={
  market:'<path d="M9 23h40l-10-10m16 28H15l10 10"/><path d="m48 13 10 10-10 10M16 51 6 41l10-10"/>',
  competitions:'<path d="M21 9h22v18q0 13-11 16-11-3-11-16zm0 6H10v11q0 9 13 9m20-20h11v11q0 9-13 9M32 43v10M22 55h20"/><path d="m32 17 3 5 5 1-4 4 1 5-5-3-5 3 1-5-4-4 5-1z"/>',
  honours:'<path d="m32 5 8 17 19 2-14 13 4 19-17-10-17 10 4-19L5 24l19-2z"/><path d="M26 25h12l-8 13"/>',
+ news:'<path d="M12 9h40v43H12zM18 16h28v8H18zm0 15h10m5 0h13M18 39h10m5 0h13M18 46h10"/>',
  calendar:'<rect x="9" y="14" width="46" height="42" rx="5"/><path d="M20 8v13M44 8v13M9 28h46M19 37h7m12 0h7m-26 9h7m12 0h7"/>',
  club:'<path d="M8 25q24-16 48 0v25q-24 13-48 0z"/><path d="M8 25q24 15 48 0M17 31v17m30-17v17M26 36h12v16H26zM16 19V8m32 11V8M11 8h10m22 0h10"/>',
  saves:'<path d="M10 9h38l8 8v38H10z"/><path d="M20 9v17h24V9M20 55V36h25v19M35 13v9"/>',

@@ -5,7 +5,7 @@ import { standings, knockoutLabel } from './competitions.js';
 import { nextFixture, transferOpen, transferPrice, ACHIEVEMENTS, scoutDeploymentCost, scoutCapacity, upgradeCost } from './career.js';
 import { scorerTable } from './simulation.js';
 
-export const icons=Object.fromEntries(['home','squad','market','competitions','calendar','club','honours','saves','settings'].map(key=>[key,icon(key)]));
+export const icons=Object.fromEntries(['home','squad','market','competitions','calendar','news','club','honours','saves','settings'].map(key=>[key,icon(key)]));
 export { icon, portrait };
 export const seasonLabel=w=>`${w.season}/${String(w.season+1).slice(2)}`;
 export const logo=()=>`<span class="brand game-brand"><img src="./assets/icon.svg" alt="" width="43" height="43"><span>SUPER<strong>SOCCER</strong><small>ARCADE MANAGER</small></span></span>`;
@@ -26,7 +26,7 @@ export function landing(slots) {
 
 export function shell(world,view,content,saveStatus='Guardado',slot=1) {
  const t=teamById(world,world.userTeam);
- const nav=[['home','INICIO'],['squad','EQUIPO'],['market','FICHAJES'],['competitions','TORNEOS'],['calendar','JORNADAS'],['club','MI CLUB'],['honours','TROFEOS'],['saves','PARTIDAS'],['settings','AJUSTES']];
+ const nav=[['home','INICIO'],['squad','EQUIPO'],['market','FICHAJES'],['competitions','TORNEOS'],['calendar','JORNADAS'],['news','NOTICIAS'],['club','MI CLUB'],['honours','TROFEOS'],['saves','PARTIDAS'],['settings','AJUSTES']];
  return `<div class="app-shell arcade-shell" data-screen="${view}"><header class="topbar"><div class="topbar-brand">${button(logo(),'nav-home','brand-button')}</div><div class="club-identity">${badgeSVG(t,44)}<div><strong>${e(t.name)}</strong><small>${e(countryById(t.country)?.name)} · DIV. ${t.division} <span class="header-stars">★ ★ ★</span></small></div></div><div class="hud-bank">${icon('coin')}<b>${money(t.budget)}</b></div><div class="hud-season"><span>SEASON</span><b>${seasonLabel(world)}</b></div><div class="topbar-right"><span class="save-state" id="save-state" title="${e(saveStatus)}">${e(saveStatus)}</span>${button(icon('saves'),'save','icon-button save-button','aria-label="Guardar partida" title="Guardar partida"')}${button(icon('full'),'fullscreen','icon-button','aria-label="Pantalla completa" title="Pantalla completa"')}</div></header><div class="main-shell"><main class="content screen-${view}">${content}</main></div><aside class="sidebar game-dock"><nav aria-label="Menú del juego">${nav.map(([id,label],i)=>button(`${icons[id]}<span>${label}</span>${id==='market'&&transferOpen(world)?'<i class="nav-dot"></i>':''}`,`nav-${id}`,`nav-item ${view===id?'active':''}`,`aria-label="${label}" title="${label}" style="--dock-index:${i}"`)).join('')}</nav><div class="dock-profile"><b>${e(world.manager)}</b><span>${icon('honours')}${world.reputation}</span></div></aside></div>`;
 }
 
@@ -183,4 +183,11 @@ export function ballonGalaView(w) {
 export function dealCelebration({player,team,kind='signing',title,subtitle,details=''}) {
   const kindClass=['sale','academy','promotion'].includes(kind)?kind:'signing';
   return `<div class="deal-celebration deal-${kindClass}"><div class="deal-stage"><div class="deal-light deal-light-a"></div><div class="deal-light deal-light-b"></div><div class="deal-sparks" aria-hidden="true">${Array.from({length:8},(_,i)=>`<i></i>`).join('')}</div><div class="deal-player">${portrait(player,team)}</div><div class="deal-emblem">${kindClass==='sale'?'↗':kindClass==='academy'?'★':kindClass==='promotion'?'↑':'✦'}</div><span class="deal-stage-label">${kindClass==='sale'?'OPERACIÓN CERRADA':kindClass==='academy'?'NUEVO TALENTO':kindClass==='promotion'?'PRIMER EQUIPO':'NUEVO FICHAJE'}</span></div><span class="deal-kicker">${kindClass==='sale'?'TRASPASO OFICIAL':kindClass==='academy'?'FICHAJE DE CANTERA':kindClass==='promotion'?'ASCENSO OFICIAL':'BIENVENIDO AL CLUB'}</span><h2>${e(title??player.name)}</h2><p>${e(subtitle??'Una nueva etapa empieza hoy.')}</p>${details?`<div class="deal-details">${e(details)}</div>`:''}<div class="modal-actions">${button('CONTINUAR','close-modal','btn primary')}</div></div>`;
+}
+
+
+export function newsView(w) {
+  const items=w.news??[],labels={result:'Resultados',transfer:'Mercado',trophy:'Títulos',youth:'Cantera',season:'Temporada',injury:'Parte médico',retirement:'Despedida',club:'Club'};
+  const lead=items[0];
+  return `${sectionHead('EL FÚTBOL, AL DÍA','DIARIO DEPORTIVO',tag(${items.length}+' NOTICIAS'))}<div class="football-paper"><header class="paper-masthead"><div class="paper-edition">EDICIÓN DEPORTIVA · TEMPORADA ${w.season}/${String(w.season+1).slice(2)}</div><div class="paper-title">EL BALÓN</div><div class="paper-rule"></div><div class="paper-subtitle">CRÓNICA DEL FÚTBOL · RESULTADOS · MERCADO · CLUBES</div></header>${lead?`<article class="paper-lead"><span class="paper-category">${e(labels[lead.type]??'Actualidad')} · PORTADA</span><h2>${e(lead.title)}</h2><p>${e(lead.body||'La jornada deja novedades en el mundo del fútbol.')}</p><small>Jornada ${(lead.event??0)+1} · ${lead.season??w.season}</small></article>`:empty('EL DIARIO AÚN NO TIENE NOTICIAS','Simula jornadas para descubrir resultados, fichajes y novedades del fútbol.')}${items.length>1?`<div class="paper-columns">${items.slice(1,25).map((item,index)=>`<article class="paper-story"><span class="paper-category">${e(labels[item.type]??'Actualidad')}</span><h3>${e(item.title)}</h3><p>${e(item.body||'Novedades de la jornada.')}</p><small>Jornada ${(item.event??0)+1} · ${item.season??w.season}</small></article>`).join('')}</div>`:''}<footer class="paper-footer">SUPER SOCCER · LA PASIÓN SE JUEGA EN TODAS PARTES</footer></div>`;
 }

@@ -207,6 +207,7 @@ export function award(world,comp,winner) {
   comp.winner=winner;const team=teamById(world,winner);
   const prize=comp.kind==='europe'?(comp.id==='euro-crown'?18000000:8000000):comp.kind==='league'?12000000:comp.kind==='super'?1500000:4500000;
   team.budget+=prize;team.honours.push({name:comp.name,season:world.season,kind:comp.kind});
+  if(team.id!==world.userTeam)news(world,`¡${team.name} gana ${comp.name}!`,`${team.name} levanta el trofeo y añade un título a su palmarés.`,'trophy');
   if(team.id===world.userTeam) {
     world.trophies.push({name:comp.name,season:world.season,kind:comp.kind,club:team.name});world.reputation=clamp(world.reputation+8,0,100);addFinance(world,`Premio: ${comp.name}`,prize);
     news(world,`¡Campeones de ${comp.name}!`,`${team.name} levanta el trofeo. Premio de competición ingresado.`, 'trophy');
@@ -307,9 +308,25 @@ export function advance(world,manualResult=null) {
     const home=teamById(world,own.home),away=teamById(world,own.away);
     news(world,`${home.short} ${own.score[0]} – ${own.score[1]} ${away.short}`,`${world.competitions.find(c=>c.id===own.competition).name}${own.pens?` · Penaltis ${own.pens.join('–')}`:''}`,'result');
   }
+  publishWorldRoundup(world,event,fixtures,own);
   unlockAchievements(world);
   if(world.eventIndex>=world.events.length)finishSeason(world);
   return own??null;
+}
+
+function publishWorldRoundup(world,event,fixtures,own) {
+  const played=fixtures.filter(f=>f.score&&!f.bye&&f!==own);
+  if(!played.length)return;
+  const winnerOf=f=>f.score[0]===f.score[1]?null:teamById(world,f.score[0]>f.score[1]?f.home:f.away);
+  const loserOf=f=>f.score[0]===f.score[1]?null:teamById(world,f.score[0]>f.score[1]?f.away:f.home);
+  const upsets=played.filter(f=>{const winner=winnerOf(f),loser=loserOf(f);return winner&&loser&&teamRating(loser)-teamRating(winner)>=9;});
+  if(upsets.length) {
+    const f=upsets.sort((a,b)=>Math.abs(b.score[0]-b.score[1])-Math.abs(a.score[0]-a.score[1]))[0],winner=winnerOf(f),loser=loserOf(f);
+    news(world,`¡Sorpresa en ${event.label}!`,`${winner.name} vence ${f.score.join('–')} a ${loser.name} y firma uno de los resultados de la jornada.`,'result');
+    return;
+  }
+  const f=[...played].sort((a,b)=>(b.score[0]+b.score[1])-(a.score[0]+a.score[1]))[0],home=teamById(world,f.home),away=teamById(world,f.away);
+  news(world,`Goleada en ${event.label}: ${home.short} ${f.score[0]}–${f.score[1]} ${away.short}`,`${world.competitions.find(c=>c.id===f.competition)?.name??'La competición'} deja un partido lleno de goles en el resto de estadios.`,'result');
 }
 
 function developPlayers(world,rng) {
