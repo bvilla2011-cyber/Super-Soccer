@@ -139,10 +139,51 @@ export function makeEnvelope(world,match=null) {
   const payload=clone({world,match});const data=JSON.stringify(payload);
   return {format:MAGIC,version:SAVE_VERSION,date:Date.now(),checksum:hash(data),data};
 }
+function migrateLegacyPayload(payload) {
+  const world=payload?.world;
+  if(!world||typeof world!=='object')return false;
+  let changed=false;
+  const setDefault=(object,key,value)=>{if(object[key]===undefined||object[key]===null){object[key]=value;changed=true;}};
+  for(const key of ['news','history','finance','transferLog','trophies','achievements','offers','freeAgents','scoutingMissions','scoutingReports']) {
+    if(!Array.isArray(world[key])){world[key]=[];changed=true;}
+  }
+  setDefault(world,'pendingPressConference',null);
+  setDefault(world,'scoutSequence',1);
+  setDefault(world,'managerStats',{matches:0,wins:0,draws:0,losses:0,goals:0,against:0,simulated:0,played:0});
+  setDefault(world,'reputation',20);
+  setDefault(world,'nextPlayerId',1);
+  const players=[...world.teams.flatMap(team=>[...(team.roster??[]),...(team.academyPlayers??[])]),...world.freeAgents];
+  for(const player of players) {
+    const defaults={potential:player.rating??60,fitness:100,morale:65,injury:0,ban:0,contract:1};
+    for(const [key,value] of Object.entries(defaults))setDefault(player,key,value);
+    if(!player.attributes||typeof player.attributes!=='object'){player.attributes={};changed=true;}
+    for(const key of ['pace','shot','pass','defense','control','stamina','keeping'])setDefault(player.attributes,key,55);
+    if(!player.stats||typeof player.stats!=='object'||Array.isArray(player.stats)){player.stats={};changed=true;}
+    if(!player.career||typeof player.career!=='object'||Array.isArray(player.career)){player.career={};changed=true;}
+  }
+  for(const team of world.teams) {
+    setDefault(team,'happiness',65);
+    setDefault(team,'academyPlayers',[]);
+    setDefault(team,'academy',1);
+    setDefault(team,'trainingLevel',1);
+    setDefault(team,'honours',[]);
+    setDefault(team,'form',[]);
+    setDefault(team,'lineup',[]);
+    if(!['2-1-1','1-2-1','1-1-2','4-4-2','4-3-3','4-2-3-1','3-5-2'].includes(team.formation)){team.formation='4-3-3';changed=true;}
+    if(!['balanced','attacking','defensive'].includes(team.tactic)){team.tactic='balanced';changed=true;}
+    if(!Array.isArray(team.academyPlayers)){team.academyPlayers=[];changed=true;}
+  }
+  if(payload.match) {
+    const snapshot=payload.match.snapshot;
+    if(!snapshot||!Array.isArray(snapshot.players)||!Array.isArray(snapshot.score)) {payload.match=null;changed=true;}
+  }
+  return changed;
+}
 export function unpack(envelope) {
   assert(envelope?.format===MAGIC&&envelope.version===SAVE_VERSION&&typeof envelope.data==='string','formato de archivo.');
   assert(envelope.data.length<=MAX_FILE&&hash(envelope.data)===envelope.checksum,'la suma de comprobación no coincide.');
   const payload=JSON.parse(envelope.data);
+  if(migrateLegacyPayload(payload))payload.economyMigrated=true;
   if(payload?.world&&rebaseCareerEconomy(payload.world))payload.economyMigrated=true;
   return validatePayload(payload);
 }
