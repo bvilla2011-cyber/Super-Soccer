@@ -42,7 +42,7 @@ test('loads a save from an older roster and feature schema by migrating before v
  for(const team of world.teams){team.roster=team.roster.slice(0,18);team.lineup=team.lineup.filter(id=>team.roster.some(player=>player.id===id));delete team.happiness;delete team.academyPlayers;}
  const envelope=makeEnvelope(createCareer({seed:124}));const payload={world,match:null};envelope.data=JSON.stringify(payload);envelope.checksum=hash(envelope.data);
  memory.set('super-soccer-save-1',JSON.stringify({id:1,current:envelope,backup:null,metadata:{manager:world.manager}}));
- const loaded=await loadSlot(1);assert.equal(loaded.world.manager,'Guardado antiguo');assert.equal(loaded.world.rosterVersion,3);
+ const loaded=await loadSlot(1);assert.equal(loaded.world.manager,'Guardado antiguo');assert.equal(loaded.world.rosterVersion,3);assert.equal(loaded.economyMigrated,true);
  assert.ok(loaded.world.teams.every(team=>team.roster.length===26&&team.academyPlayers.length===0&&team.happiness===65));
 });
 test('fallback storage keeps the newest career when the previous generation exceeds quota',async()=>{
