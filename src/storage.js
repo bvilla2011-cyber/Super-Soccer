@@ -143,7 +143,7 @@ export function unpack(envelope) {
   assert(envelope?.format===MAGIC&&envelope.version===SAVE_VERSION&&typeof envelope.data==='string','formato de archivo.');
   assert(envelope.data.length<=MAX_FILE&&hash(envelope.data)===envelope.checksum,'la suma de comprobación no coincide.');
   const payload=JSON.parse(envelope.data);
-  if(payload?.world)rebaseCareerEconomy(payload.world);
+  if(payload?.world&&rebaseCareerEconomy(payload.world))payload.economyMigrated=true;
   return validatePayload(payload);
 }
 let saveQueue=Promise.resolve();
@@ -163,7 +163,7 @@ export function saveSlot(id,world,match=null) {
 export async function loadSlot(id,{backup=false}={}) {
   await saveQueue.catch(()=>{});
   const record=await readRecord(id);if(!record)return null;
-  const restore=envelope=>{const payload=unpack(envelope);payload.economyMigrated=rebaseCareerEconomy(payload.world);return payload;};
+  const restore=envelope=>unpack(envelope);
   if(backup) {if(!record.backup)throw new Error('Esta ranura todavía no tiene una copia anterior.');return {...restore(record.backup),recovered:true};}
   try {return {...restore(record.current),recovered:false};}
   catch(error){if(record.backup)return {...restore(record.backup),recovered:true};throw error;}
@@ -179,7 +179,7 @@ export async function deleteSlot(id) {
 export function exportSave(world,match=null) {return JSON.stringify(makeEnvelope(world,match));}
 export function importSave(text) {
   if(typeof text!=='string'||text.length>MAX_FILE)throw new Error('El archivo supera el límite de 24 MB.');
-  try{const payload=unpack(JSON.parse(text));payload.economyMigrated=rebaseCareerEconomy(payload.world);return payload;}catch(error){if(error instanceof SyntaxError)throw new Error('El archivo no contiene una partida JSON válida.');throw error;}
+  try{return unpack(JSON.parse(text));}catch(error){if(error instanceof SyntaxError)throw new Error('El archivo no contiene una partida JSON válida.');throw error;}
 }
 export function getSettings() {
   const defaults={sound:true,music:false,volume:.45,duration:180,offside:false,quality:'high',reducedMotion:false,autoSwitch:true};
