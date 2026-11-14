@@ -6,7 +6,7 @@ import {submitOffer,advanceDay,signOffer} from '../src/negotiations.js';
 import {exportSave,importSave} from '../src/storage.js';
 
 test('offers wait for a response, survive export and only transfer after signing',()=>{
- let w=createCareer({seed:42,mode:'league'}),own=teamById(w,w.userTeam),source=teamById(w,'en-1'),p=source.roster[8];own.roster.pop();
+ let w=createCareer({seed:42,mode:'league'}),own=teamById(w,w.userTeam),source=teamById(w,'en-1'),p=source.roster[8];own.roster.pop();own.budget=1_000_000_000;
  const fee=transferPrice(p,source,own),offer=submitOffer(w,p.id,fee);
  assert.equal(offer.status,'pending');assert.ok(source.roster.some(q=>q.id===p.id));
  advanceDay(w);assert.equal(offer.status,'pending');w=importSave(exportSave(w)).world;
