@@ -205,12 +205,12 @@ async function runMatchday(){
 function chooseLineup(id){
   const w=matchContext?.friendly?matchContext.world:world;const team=teamById(w,w.userTeam);const p=team.roster.find(p=>p.id===id);if(!p)return;
   const current=game?.state==='HalfTime'?activePlayers(teamById(halfTimeWorld(),team.id)):activePlayers(team);
-  modal('CAMBIO EN LA ALINEACIÓN',`<h2>${e(p.name)} entra en el once.</h2><p class="muted">Elige a quién sustituye. ${p.position==='POR'?'Debe ocupar el puesto de portero.':'Debe sustituir a un jugador de campo.'}</p><div class="lineup-options">${current.filter(q=>p.position==='POR'?q.position==='POR':q.position!=='POR').map(q=>UI.button(`${UI.rating(overall(q))}<span>${e(q.name)}<small>${q.position} · Físico ${Math.round(q.fitness)}%</small></span><b>⇄</b>`,`swap-${id}|${q.id}`,'lineup-option')).join('')}</div>`);
+  modal('CAMBIO EN LA ALINEACIÓN',`<h2>${e(p.name)} entra en el once.</h2><p class="muted">Elige a quién sustituye. ${p.position==='POR'?'Debe ocupar el puesto de portero.':'Debe sustituir a un jugador de campo.'}</p><div class="lineup-options">${current.filter(q=>q.position===p.position).map(q=>UI.button(`${UI.rating(overall(q))}<span>${e(q.name)}<small>${q.position} · Físico ${Math.round(q.fitness)}%</small></span><b>⇄</b>`,`swap-${id}|${q.id}`,'lineup-option')).join('')}</div>`);
 }
 function applySwap(input){
   const [inId,outId]=input.split('|');const w=matchContext?.friendly?matchContext.world:world,t=teamById(w,w.userTeam);const incoming=t.roster.find(p=>p.id===inId);if(!incoming||incoming.injury||incoming.ban)throw new Error('El jugador no está disponible.');
-  const active=game?.state==='HalfTime'?activePlayers(teamById(halfTimeWorld(),t.id)):activePlayers(t);const outgoing=active.find(p=>p.id===outId);if(!outgoing||active.some(p=>p.id===inId))return;
-  t.lineup=active.map(p=>p.id===outId?inId:p.id);closeModal(true);
+  const active=game?.state==='HalfTime'?activePlayers(teamById(halfTimeWorld(),t.id)):activePlayers(t);const outgoing=active.find(p=>p.id===outId);if(!outgoing||active.some(p=>p.id===inId))return;if(incoming.position!==outgoing.position)throw new Error('El cambio debe mantener la posición del jugador sustituido.');
+  t.lineup[outgoing.slotIndex??active.indexOf(outgoing)]=inId;closeModal(true);
   if(game?.state==='HalfTime')openHalfTime();else render();if(world)scheduleSave();
 }
 function offer(id,type='transfer',suggested=null){

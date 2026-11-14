@@ -26,17 +26,17 @@ export const COUNTRIES = [
 
 export const POSITIONS = ['POR','DEF','MED','DEL'];
 export const FORMATIONS = {
-  '4-4-2': { name:'4-4-2', bases:[[.05,.5],[.23,.16],[.23,.38],[.23,.62],[.23,.84],[.46,.16],[.46,.38],[.46,.62],[.46,.84],[.76,.36],[.76,.64]], attack:1, defense:1 },
-  '4-3-3': { name:'4-3-3', bases:[[.05,.5],[.23,.16],[.23,.38],[.23,.62],[.23,.84],[.47,.25],[.47,.5],[.47,.75],[.77,.16],[.77,.5],[.77,.84]], attack:4, defense:-1 },
-  '4-2-3-1': { name:'4-2-3-1', bases:[[.05,.5],[.23,.16],[.23,.38],[.23,.62],[.23,.84],[.41,.36],[.41,.64],[.59,.2],[.59,.5],[.59,.8],[.81,.5]], attack:2, defense:2 },
-  '3-5-2': { name:'3-5-2', bases:[[.05,.5],[.23,.25],[.23,.5],[.23,.75],[.47,.1],[.47,.3],[.47,.5],[.47,.7],[.47,.9],[.76,.36],[.76,.64]], attack:3, defense:-2 },
-  '2-1-1': { name:'2-1-1 · guardado antiguo', bases:[[.05,.5],[.23,.16],[.23,.38],[.23,.62],[.23,.84],[.46,.16],[.46,.38],[.46,.62],[.46,.84],[.76,.36],[.76,.64]], attack:1, defense:1, legacy:true },
-  '1-2-1': { name:'1-2-1 · guardado antiguo', bases:[[.05,.5],[.23,.16],[.23,.38],[.23,.62],[.23,.84],[.47,.25],[.47,.5],[.47,.75],[.77,.16],[.77,.5],[.77,.84]], attack:4, defense:-1, legacy:true },
-  '1-1-2': { name:'1-1-2 · guardado antiguo', bases:[[.05,.5],[.23,.16],[.23,.38],[.23,.62],[.23,.84],[.41,.36],[.41,.64],[.59,.2],[.59,.5],[.59,.8],[.81,.5]], attack:2, defense:2, legacy:true }
+  '4-4-2': { name:'4-4-2', slots:['POR','DEF','DEF','DEF','DEF','MED','MED','MED','MED','DEL','DEL'], bases:[[.05,.5],[.23,.16],[.23,.38],[.23,.62],[.23,.84],[.46,.16],[.46,.38],[.46,.62],[.46,.84],[.76,.36],[.76,.64]], attack:1, defense:1 },
+  '4-3-3': { name:'4-3-3', slots:['POR','DEF','DEF','DEF','DEF','MED','MED','MED','DEL','DEL','DEL'], bases:[[.05,.5],[.23,.16],[.23,.38],[.23,.62],[.23,.84],[.47,.25],[.47,.5],[.47,.75],[.77,.16],[.77,.5],[.77,.84]], attack:4, defense:-1 },
+  '4-2-3-1': { name:'4-2-3-1', slots:['POR','DEF','DEF','DEF','DEF','MED','MED','MED','MED','MED','DEL'], bases:[[.05,.5],[.23,.16],[.23,.38],[.23,.62],[.23,.84],[.41,.36],[.41,.64],[.59,.2],[.59,.5],[.59,.8],[.81,.5]], attack:2, defense:2 },
+  '3-5-2': { name:'3-5-2', slots:['POR','DEF','DEF','DEF','MED','MED','MED','MED','MED','DEL','DEL'], bases:[[.05,.5],[.23,.25],[.23,.5],[.23,.75],[.47,.1],[.47,.3],[.47,.5],[.47,.7],[.47,.9],[.76,.36],[.76,.64]], attack:3, defense:-2 },
+  '2-1-1': { name:'2-1-1 · guardado antiguo', slots:['POR','DEF','DEF','DEF','DEF','MED','MED','MED','MED','DEL','DEL'], bases:[[.05,.5],[.23,.16],[.23,.38],[.23,.62],[.23,.84],[.46,.16],[.46,.38],[.46,.62],[.46,.84],[.76,.36],[.76,.64]], attack:1, defense:1, legacy:true },
+  '1-2-1': { name:'1-2-1 · guardado antiguo', slots:['POR','DEF','DEF','DEF','DEF','MED','MED','MED','DEL','DEL','DEL'], bases:[[.05,.5],[.23,.16],[.23,.38],[.23,.62],[.23,.84],[.47,.25],[.47,.5],[.47,.75],[.77,.16],[.77,.5],[.77,.84]], attack:4, defense:-1, legacy:true },
+  '1-1-2': { name:'1-1-2 · guardado antiguo', slots:['POR','DEF','DEF','DEF','DEF','MED','MED','MED','MED','MED','DEL'], bases:[[.05,.5],[.23,.16],[.23,.38],[.23,.62],[.23,.84],[.41,.36],[.41,.64],[.59,.2],[.59,.5],[.59,.8],[.81,.5]], attack:2, defense:2, legacy:true }
 };
 export function formationCoordinates(team, players = activePlayers(team)) {
   const bases = (FORMATIONS[team.formation] ?? FORMATIONS['4-4-2']).bases;
-  return players.map((_, index) => [...(bases[index] ?? bases[bases.length - 1])]);
+  return players.map((player,index) => [...(bases[player.slotIndex??index] ?? bases[bases.length - 1])]);
 }
 export const DIFFICULTIES = {
   rookie:{name:'Debutante',reaction:.65,accuracy:.78,speed:.92,bonus:5},
@@ -122,14 +122,22 @@ export const teamById = (world,id) => world.teams.find(t=>t.id===id);
 export const countryById = id => COUNTRIES.find(c=>c.id===id);
 export function activePlayers(team) {
   const limit=clamp(team.matchLimit??11,1,11);
-  const available = team.roster.filter(p=>p.injury===0 && p.ban===0);
-  const selected = team.lineup.map(id=>available.find(p=>p.id===id)).filter(Boolean);
-  const keeper = selected.find(p=>p.position==='POR') ?? available.filter(p=>p.position==='POR').sort((a,b)=>overall(b)-overall(a))[0];
-  const field = selected.filter(p=>p.position!=='POR').slice(0,limit-(keeper?1:0));
-  for (const p of available.filter(p=>p.position!=='POR').sort((a,b)=>overall(b)-overall(a))) if(field.length<limit-(keeper?1:0)&&!field.includes(p)) field.push(p);
-  // Emergency players retain their actual position, no duplication or magical recovery.
-  if (!keeper && available.length) return available.slice(0,limit);
-  return [keeper,...field].filter(Boolean);
+  const available=team.roster.filter(p=>p.injury===0&&p.ban===0);
+  const formation=FORMATIONS[team.formation]??FORMATIONS['4-4-2'];
+  const used=new Set(),slots=Array(11).fill(null);
+  let redVacancies=Math.max(0,11-limit);
+  for(let index=0;index<11;index++) {
+    const original=team.roster.find(p=>p.id===team.lineup?.[index])??null;
+    if(redVacancies>0&&original?.ban>0){redVacancies--;continue;}
+    if(original&&available.includes(original)){slots[index]={player:original,slotIndex:index};used.add(original.id);continue;}
+    const position=original?.position??formation.slots?.[index]??'DEF';
+    let candidates=available.filter(p=>!used.has(p.id)&&p.position===position);
+    if(!candidates.length&&position!=='POR')candidates=available.filter(p=>!used.has(p.id)&&p.position!=='POR');
+    candidates.sort((a,b)=>overall(b)-overall(a));
+    const replacement=candidates[0];
+    if(replacement){slots[index]={player:replacement,slotIndex:index};used.add(replacement.id);}
+  }
+  return slots.filter(Boolean).map(({player,slotIndex})=>({...player,slotIndex}));
 }
 export function teamRating(team) {
   const ps = activePlayers(team);

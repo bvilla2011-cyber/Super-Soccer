@@ -1,5 +1,5 @@
 import { teamById } from './data.js';
-import { buyPlayer, transferOpen, transferPrice, news, resolveScoutingMissions } from './career.js';
+import { buyPlayer, preserveLineupSlots, transferOpen, transferPrice, news, resolveScoutingMissions } from './career.js';
 import { random } from './utils.js';
 
 function locate(world,id) {
@@ -100,7 +100,7 @@ export function answerIncomingOffer(world,id,decision) {
   const own=teamById(world,world.userTeam),buyer=teamById(world,offer.buyerId),player=own.roster.find(p=>p.id===offer.playerId);
   if(!buyer||!player||buyer.roster.length>=26||buyer.budget<fee)throw new Error('El comprador ya no puede completar el fichaje.');
   if(own.roster.length<=8||(player.position==='POR'&&own.roster.filter(p=>p.position==='POR').length<=1))throw new Error('Necesitas conservar al menos ocho jugadores y un portero.');
-  own.roster=own.roster.filter(p=>p.id!==player.id);own.lineup=own.lineup.filter(playerId=>playerId!==player.id);own.budget+=fee;buyer.budget-=fee;player.number=freeNumber(buyer);player.contract=3;buyer.roster.push(player);
+  preserveLineupSlots(own,new Set([player.id]));own.roster=own.roster.filter(p=>p.id!==player.id);own.lineup=own.lineup.filter(playerId=>playerId!==player.id);own.budget+=fee;buyer.budget-=fee;player.number=freeNumber(buyer);player.contract=3;buyer.roster.push(player);
   world.finance.unshift({label:`Venta: ${player.name}`,amount:fee,season:world.season,event:world.eventIndex});world.finance=world.finance.slice(0,40);
   world.transferLog.unshift({name:player.name,from:own.name,to:buyer.name,fee,season:world.season,event:world.eventIndex});world.transferLog=world.transferLog.slice(0,80);
   offer.status='sold';offer.saleFee=fee;offer.unread=false;news(world,`${player.name} ficha por ${buyer.name}`,`Oferta aceptada por ${moneyText(fee)}.`,'transfer');return player;
